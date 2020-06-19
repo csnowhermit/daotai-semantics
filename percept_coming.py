@@ -87,7 +87,6 @@ if __name__ == '__main__':
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
                         time.sleep(3)    # 识别到有人来了，等人问完问题再进行识别
-
             # Check our current fps
             end_time = time.time()
             if (end_time - start_time) > fps_display_interval:
