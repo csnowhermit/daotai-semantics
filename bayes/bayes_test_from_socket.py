@@ -142,7 +142,7 @@ def test_bayes(model_file):
 
         word_list = []
         new_sentences, shinei_area = get_words(sentences)
-        if isChat(new_sentences) is False:  # 如果不是闲聊
+        if isChat(new_sentences) is False:  # 如果不是咨询类
             if len(shinei_area) > 0:
                 print("导航", "-->", word_list, "-->", sentences)
                 semantics_log.logger.info(("导航", "-->", word_list, "-->", sentences))
