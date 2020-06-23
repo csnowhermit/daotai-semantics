@@ -21,7 +21,7 @@ personal_luggage_list = ['bicycle', 'backpack',  'umbrella',
                         ]
 
 # 摄像机地址
-input_webcam = "rtsp://admin:quickhigh123456@192.168.0.155"
+input_webcam = "rtsp://admin:quickhigh123456@192.168.120.155"
 
 # 现场图像保存路径
 portrait_img_path = "D:/daotai/portrait_imgs/"
