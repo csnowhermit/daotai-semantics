@@ -61,12 +61,18 @@ def callback(ch, method, properties, body):
             os.makedirs(portrait_img_path)
         savefile = os.path.join(portrait_img_path, "%s_%s.jpg" % (daotaiID, formatted_time))
 
-        frame, facebboxes, landmarks = captureImage(input_webcam)
-        gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        print("frame:", type(frame), frame.shape)
-        result, featureDict = detect_portrait(yolo=yolo, frame=frame, gray_image=gray_image, bbox=facebboxes,
-                                              landmarks=landmarks)  # 应用中调这行代码即可
 
+        frame, facebboxes, landmarks = captureImage(input_webcam)
+        if frame is not None:
+            gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            print("frame:", type(frame), frame.shape)
+            result, featureDict = detect_portrait(yolo=yolo, frame=frame, gray_image=gray_image, bbox=facebboxes,
+                                                  landmarks=landmarks)  # 应用中调这行代码即可
+            cv2.imwrite(savefile, result)
+        else:
+            result = frame
+            savefile = ""
+            featureDict = {"errorMsg": "暂未捕捉到画面"}
         # 拼接最后的json
         portraitDict = {}
         portraitDict["source"] = source  # 标识来源是语义yuyi端还是backstage后端
@@ -79,7 +85,6 @@ def callback(ch, method, properties, body):
         portraitDict["intentionLevel"] = recvDict["intentionLevel"]    # 意图级别
 
         portrait_log.logger.info("complete-portrait: %s" % portraitDict)  # 写日志也行，入库也行
-        cv2.imwrite(savefile, result)
     except Exception as e:
         portrait_log.logger.error(traceback.format_exc())
     portrait_log.logger.info("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))

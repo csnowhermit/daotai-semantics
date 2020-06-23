@@ -39,12 +39,14 @@ def captureImage(input_webcam):
 
         if frame is None:
             retry += 1
-            time.sleep(0.5)    # 读取失败后立马重试没有任何意义
+            time.sleep(2)    # 读取失败后立马重试没有任何意义
+            continue
             if retry > 10:
                 break
+        print("===== frame.shape =====", frame.shape)
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
             # if frame_count > -1:
-            frame = np.asanyarray(frame)
+            # frame = np.asanyarray(frame)    # 本身frame就是np.ndarray，不用再转
 
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
             bboxes, landmarks = face_detect.detect_face(frame)
@@ -71,6 +73,7 @@ def captureImage(input_webcam):
                 frame_count = 0
     cap.release()
     cv2.destroyAllWindows()
+    return None, [], []
 
 '''
     检测，生成人物画像
