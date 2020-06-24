@@ -52,7 +52,7 @@ def captureImage(input_webcam):
     while True:
         ret, frame = cap.read()
 
-        print("===== frame.shape =====", frame.shape)
+        # print("===== frame.shape =====", frame.shape)
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
             # if frame_count > -1:
             # frame = np.asanyarray(frame)    # 本身frame就是np.ndarray，不用再转

@@ -44,7 +44,7 @@ if __name__ == '__main__':
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
-    cap = getCap(0)
+    cap = getCap(input_webcam)
     portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
 
     start_time = time.time()
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                         # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                         #                                 routing_key=backstage_routingKey,
                         #                                 body=str(commingDict))  # 将语义识别结果给到后端
-                        time.sleep(3)    # 识别到有人来了，等人问完问题再进行识别
+                        # time.sleep(3)    # 识别到有人来了，等人问完问题再进行识别
             cv2.imshow("coming", frame)
             cv2.waitKey(1)
             # Check our current fps

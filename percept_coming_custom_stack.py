@@ -13,17 +13,18 @@ from mymodel import *
 from utils.commonutil import getFormatTime
 import configparser
 import pika
-import queue
+from utils.CapUtil import Stack
 from portrait_detect import getCap
 import threading
 
 '''
     来人感知模块
-    Note：queue.Queue()，先进先出队列，本质上并不能解决消费速度赶不上生产速度的情况，只是将图像暂存在队列中
-    解决办法：使用栈，每次都能读取到最新的，同时清空栈
+    Note：自定义Stack(stack_szie)，解决消费速度跟不上生成速度的情况；
+    Note：percept_coming.py中也可解决，但在webcam中会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
 '''
 
-q = queue.Queue()
+frame_buffer = Stack(30 * 5)
+lock = threading.RLock()
 
 def Receive():
     print("start Receive")
@@ -40,8 +41,10 @@ def Receive():
         ret, frame = cap.read()
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
             if ret is True:
-                q.put(frame)
-
+                # q.put(frame)
+                lock.acquire()
+                frame_buffer.push(frame)
+                lock.release()
             # Check our current fps
             end_time = time.time()
             if (end_time - start_time) > fps_display_interval:
@@ -62,17 +65,19 @@ def percept():
     vhost = str(cf.get(nodeName, "vhost"))
     backstage_routingKey = str(cf.get(nodeName, "routingKey"))
 
-    # credentials = pika.PlainCredentials(username=username, password=password)
-    # connection = pika.BlockingConnection(
-    #     pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
-    # backstage_channel = connection.channel()
+    credentials = pika.PlainCredentials(username=username, password=password)
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
+    backstage_channel = connection.channel()
 
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
     while True:
-        if q.empty() != True:
-            frame = q.get(block=False)
+        if frame_buffer.size() > 0:
+            lock.acquire()
+            frame = frame_buffer.pop()    # 每次拿最新的
+            lock.release()
 
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
             bboxes, landmarks = face_detect.detect_face(frame)
@@ -98,9 +103,9 @@ def percept():
 
                         print("commingDict: %s" % (commingDict))
                         portrait_log.logger.info("commingDict: %s" % (commingDict))
-                        # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                        #                                 routing_key=backstage_routingKey,
-                        #                                 body=str(commingDict))  # 将语义识别结果给到后端
+                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                        routing_key=backstage_routingKey,
+                                                        body=str(commingDict))  # 将语义识别结果给到后端
                         # time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
             cv2.imshow("frame", frame)
             cv2.waitKey(1)

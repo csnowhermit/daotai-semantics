@@ -136,6 +136,7 @@ def test_bayes(model_file):
             semantics_log.logger.info("%s %s" % (conn, addr))
             print(conn, addr)
             semantics_log.logger.info((conn, addr))
+            continue
         except Exception as e:
             traceback.print_exc(file=open(semantics_logfile, 'a+'))
             continue
