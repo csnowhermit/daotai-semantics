@@ -32,6 +32,17 @@ def captureImage(input_webcam):
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
     cap = cv2.VideoCapture(input_webcam)
+    # cap_retry = 0
+    # while cap.isOpened() is False:
+    #     portrait_log.logger.error("摄像头打开失败，正在第 %d 次重试" % (cap_retry))
+    #     cap_retry += 1
+    #     time.sleep(1)
+    #     cap = cv2.VideoCapture(input_webcam)
+    #     if cap.isOpened():
+    #         break
+    #     if cap_retry > 5:
+    #         return None, [], []
+
     start_time = time.time()
     retry = 0    # 读cap.read()重试次数
     while True:
@@ -39,9 +50,9 @@ def captureImage(input_webcam):
 
         if frame is None:
             retry += 1
-            time.sleep(2)    # 读取失败后立马重试没有任何意义
+            time.sleep(1)    # 读取失败后立马重试没有任何意义
             continue
-            if retry > 10:
+            if retry > 5:
                 break
         print("===== frame.shape =====", frame.shape)
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配

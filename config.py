@@ -1,5 +1,6 @@
 import os
 from Logger import *
+import cv2
 
 '''
     配置项
@@ -22,6 +23,8 @@ personal_luggage_list = ['bicycle', 'backpack',  'umbrella',
 
 # 摄像机地址
 input_webcam = "rtsp://admin:quickhigh123456@192.168.120.155"
+
+# cap = cv2.VideoCapture(input_webcam)
 
 # 现场图像保存路径
 portrait_img_path = "D:/daotai/portrait_imgs/"
