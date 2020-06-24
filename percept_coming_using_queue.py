@@ -13,14 +13,42 @@ from mymodel import *
 from utils.commonutil import getFormatTime
 import configparser
 import pika
+import queue
 from portrait_detect import getCap
+import threading
 
 '''
     来人感知模块
 '''
 
-if __name__ == '__main__':
-    nodeName = "rabbit2backstage"    # 读取该节点的数据
+q = queue.Queue()
+
+def Receive():
+    print("start Receive")
+    print("start Receive")
+    cap = cv2.VideoCapture(0)
+    # cap = getCap(input_webcam)
+    portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
+    frame_interval = 3  # Number of frames after which to run face detection
+    fps_display_interval = 5  # seconds
+    frame_count = 0
+
+    start_time = time.time()
+    while True:
+        ret, frame = cap.read()
+        if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
+            if ret is True:
+                q.put(frame)
+
+            # Check our current fps
+            end_time = time.time()
+            if (end_time - start_time) > fps_display_interval:
+                frame_rate = int(frame_count / (end_time - start_time))
+                start_time = time.time()
+                frame_count = 0
+
+def percept():
+    nodeName = "rabbit2backstage"  # 读取该节点的数据
 
     cf = configparser.ConfigParser()
     cf.read("./kdata/config.conf")
@@ -37,30 +65,12 @@ if __name__ == '__main__':
     #     pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
     # backstage_channel = connection.channel()
 
-    frame_interval = 3  # Number of frames after which to run face detection
-    fps_display_interval = 5  # seconds
-    frame_count = 0
-
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
-    cap = getCap(0)
-    portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
-
-    start_time = time.time()
-    retry = 0  # 读cap.read()重试次数
     while True:
-        ret, frame = cap.read()
-
-        if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
-            # if frame_count > -1:
-            # frame = np.asanyarray(frame)
-            if frame is None:
-                retry += 1
-                time.sleep(1)  # 读取失败后立马重试没有任何意义
-                continue
-            if retry > 5:
-                break
+        if q.empty() != True:
+            frame = q.get()
 
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
             bboxes, landmarks = face_detect.detect_face(frame)
@@ -82,20 +92,22 @@ if __name__ == '__main__':
                         commingDict["daotaiID"] = daotaiID
                         commingDict["message"] = ""
                         commingDict["timestamp"] = str(int(time.time()) * 1000)
-                        commingDict["intention"] = "mycoming"    # 表示有人来了
+                        commingDict["intention"] = "mycoming"  # 表示有人来了
 
+                        print("commingDict: %s" % (commingDict))
                         portrait_log.logger.info("commingDict: %s" % (commingDict))
                         # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                         #                                 routing_key=backstage_routingKey,
                         #                                 body=str(commingDict))  # 将语义识别结果给到后端
-                        time.sleep(3)    # 识别到有人来了，等人问完问题再进行识别
-            cv2.imshow("coming", frame)
+                        time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
+            cv2.imshow("frame", frame)
             cv2.waitKey(1)
-            # Check our current fps
-            end_time = time.time()
-            if (end_time - start_time) > fps_display_interval:
-                frame_rate = int(frame_count / (end_time - start_time))
-                start_time = time.time()
-                frame_count = 0
-    cap.release()
-    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    p1 = threading.Thread(target=Receive)
+    p2 = threading.Thread(target=percept)
+    p1.start()
+    time.sleep(5)
+    p2.start()
+
+

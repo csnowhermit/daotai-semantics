@@ -61,7 +61,6 @@ def callback(ch, method, properties, body):
             os.makedirs(portrait_img_path)
         savefile = os.path.join(portrait_img_path, "%s_%s.jpg" % (daotaiID, formatted_time))
 
-
         frame, facebboxes, landmarks = captureImage(input_webcam)
         if frame is not None:
             gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -84,7 +83,7 @@ def callback(ch, method, properties, body):
         portraitDict["intention"] = recvDict["intention"]  # 意图
         portraitDict["intentionLevel"] = recvDict["intentionLevel"]    # 意图级别
 
-        portrait_log.logger.info("complete-portrait: %s" % portraitDict)  # 写日志也行，入库也行
+        portrait_log.logger.info("complete-portrait: %s" % (portraitDict))  # 写日志也行，入库也行
     except Exception as e:
         portrait_log.logger.error(traceback.format_exc())
     portrait_log.logger.info("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))

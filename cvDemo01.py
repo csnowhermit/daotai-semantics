@@ -1,7 +1,7 @@
 import cv2
 
 #input_path = "rtsp://admin:quickhigh123456@192.168.0.103"
-input_path = "rtsp://admin:quickhigh123456@192.168.0.155"
+input_path = "rtsp://admin:quickhigh123456@192.168.120.155"
 
 cap = cv2.VideoCapture(input_path)
 print("cap:", cap)
