@@ -16,14 +16,28 @@ from utils.commonutil import getFormatTime
     人物画像模块
 '''
 
+'''
+    获取摄像头连接
+'''
+def getCap(input_webcam):
+    if input_webcam == "0":
+        input_webcam = int(0)
+
+    cap_retry = 0
+    while True:
+        cap = cv2.VideoCapture(input_webcam)
+        if cap.isOpened():
+            return cap
+        else:
+            if cap_retry < 5:
+                cap_retry += 1
+                time.sleep(0.5 * cap_retry)
+                portrait_log.logger.error("摄像头打开失败，正在第 %d 次重试" % (cap_retry))
 
 '''
     抓取图片
 '''
 def captureImage(input_webcam):
-    if input_webcam == "0":
-        input_webcam = int(0)
-
     frame_interval = 3  # Number of frames after which to run face detection
     fps_display_interval = 5  # seconds
     frame_count = 0
@@ -31,33 +45,23 @@ def captureImage(input_webcam):
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
-    cap = cv2.VideoCapture(input_webcam)
-    # cap_retry = 0
-    # while cap.isOpened() is False:
-    #     portrait_log.logger.error("摄像头打开失败，正在第 %d 次重试" % (cap_retry))
-    #     cap_retry += 1
-    #     time.sleep(1)
-    #     cap = cv2.VideoCapture(input_webcam)
-    #     if cap.isOpened():
-    #         break
-    #     if cap_retry > 5:
-    #         return None, [], []
+    cap = getCap(input_webcam)
 
     start_time = time.time()
     retry = 0    # 读cap.read()重试次数
     while True:
         ret, frame = cap.read()
 
-        if frame is None:
-            retry += 1
-            time.sleep(1)    # 读取失败后立马重试没有任何意义
-            continue
-            if retry > 5:
-                break
         print("===== frame.shape =====", frame.shape)
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
             # if frame_count > -1:
             # frame = np.asanyarray(frame)    # 本身frame就是np.ndarray，不用再转
+            if frame is None:
+                retry += 1
+                time.sleep(1)  # 读取失败后立马重试没有任何意义
+                continue
+            if retry > 5:
+                break
 
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
             bboxes, landmarks = face_detect.detect_face(frame)

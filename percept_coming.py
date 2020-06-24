@@ -13,6 +13,7 @@ from mymodel import *
 from utils.commonutil import getFormatTime
 import configparser
 import pika
+from portrait_detect import getCap
 
 '''
     来人感知模块
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     nodeName = "rabbit2backstage"    # 读取该节点的数据
 
     cf = configparser.ConfigParser()
-    cf.read("../kdata/config.conf")
+    cf.read("./kdata/config.conf")
     host = str(cf.get(nodeName, "host"))
     port = int(cf.get(nodeName, "port"))
     username = str(cf.get(nodeName, "username"))
@@ -36,9 +37,6 @@ if __name__ == '__main__':
         pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
     backstage_channel = connection.channel()
 
-    if input_webcam == "0":
-        input_webcam = int(0)
-
     frame_interval = 3  # Number of frames after which to run face detection
     fps_display_interval = 5  # seconds
     frame_count = 0
@@ -46,20 +44,23 @@ if __name__ == '__main__':
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
-    cap = cv2.VideoCapture(input_webcam)
+    cap = getCap(input_webcam)
+    portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
+
     start_time = time.time()
     retry = 0  # 读cap.read()重试次数
     while True:
         ret, frame = cap.read()
 
-        if frame is None:
-            retry += 1
-            time.sleep(retry * 2)  # 读取失败后立马重试没有任何意义
-            if retry > 10:
-                break
         if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
             # if frame_count > -1:
-            frame = np.asanyarray(frame)
+            # frame = np.asanyarray(frame)
+            if frame is None:
+                retry += 1
+                time.sleep(1)  # 读取失败后立马重试没有任何意义
+                continue
+            if retry > 5:
+                break
 
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
             bboxes, landmarks = face_detect.detect_face(frame)
@@ -83,6 +84,7 @@ if __name__ == '__main__':
                         commingDict["timestamp"] = str(int(time.time()) * 1000)
                         commingDict["intention"] = "mycoming"    # 表示有人来了
 
+                        portrait_log.logger.log("commingDict: %s" % (commingDict))
                         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
