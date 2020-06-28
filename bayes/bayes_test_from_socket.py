@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import os
+import sys
 import time
 import json
 import random
@@ -10,7 +11,12 @@ import traceback
 import itertools
 import pika
 from sklearn.externals import joblib
+
+base_path = "D:/workspace/workspace_python/daotai-semantics"
+sys.path.append(base_path)
 from bayes.bayes_train import get_words, bernousNB_save_path, isChat
+
+sys.path.append("..")
 from Logger import *
 
 '''
@@ -124,7 +130,8 @@ def test_bayes(model_file):
             else:
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
-            recvJson = json.loads(recvStr)
+            # recvJson = json.loads(recvStr)
+            recvJson = eval(recvStr)    # str转dict
             semantics_log.logger.info(recvJson)    # 所有传来的都会记录
             daotaiID = recvJson["daotaiID"]
             sentences = recvJson["message"]
@@ -242,12 +249,9 @@ def test_bayes(model_file):
 
 
 def main():
-    # test_bayes(get_newest_model(multinamialNB_save_path))
-    print(get_newest_model(bernousNB_save_path))
-    test_bayes(get_newest_model(bernousNB_save_path))
-    # print(get_newest_model(multinamialNB_save_path))
     # print(get_newest_model(bernousNB_save_path))
-    # divideTestSet(test_set)
+    newest_model = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1576632950_9512195121951219_0_0.m"     # 这里写模型文件的绝对路径
+    test_bayes(newest_model)
 
     # model_file = "D:/workspace/Pycharm_Projects/develop-python-case/NLP/textCategory/bayes/model/bernousNB/bernousNB_1576579523_9512195121951219_0_0.m"
     # test_bayes(model_file)
