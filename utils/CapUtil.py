@@ -26,8 +26,9 @@ class Stack:
 
     def push(self, item):
         if self.size() >= self.stack_size:
-            for i in range(0, self.size()):
-                self.items.remove(self.items[0])
+            # for i in range(0, self.size()):
+            #     self.items.remove(self.items[0])
+            self.items.clear()
         self.items.append(item)
 
 def capture_thread(input_webcam, frame_buffer, lock):
