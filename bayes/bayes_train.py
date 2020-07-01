@@ -305,8 +305,14 @@ def trainBinarize(num_alpha, num_binarize):
     train_set, train_label, test_set_tmp, test_label_tmp = split_train_and_test_set(org_data, 1.0)
 
     # 2.加载原始数据，现场切词，作为测试数据集
-    test_data = get_dataset()
-    train_set_tmp, train_label_tmp, test_set, test_label = split_train_and_test_set(test_data, 0.0)
+    # test_data = get_dataset()
+    train_set_tmp, train_label_tmp, test_set, test_label = split_train_and_test_set(org_data, 0.0)
+    print("========================================")
+    print("train_set", type(train_set), train_set)
+    print("train_label", type(train_label), train_label)
+    print("test_set", type(test_set), test_set)
+    print("test_label", type(test_label), test_label)
+    print("========================================")
 
     result = []  # 保存每轮训练的参数及准确率
     alpha_increase_rate = float(1 / num_alpha)
@@ -364,8 +370,8 @@ def main():
     # test_data = get_dataset()
     # train_set_tmp, train_label_tmp, test_set, test_label = split_train_and_test_set(test_data, 0.0)
 
-    # 3.多轮训练多项式分类器
-    trainMultinamialNB(100)
+    # # 3.多轮训练多项式分类器
+    # trainMultinamialNB(100)
 
     # 4.多轮训练伯努利分类器
     trainBinarize(100, 10)

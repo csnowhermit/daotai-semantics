@@ -2,65 +2,31 @@
 
 import os
 from sklearn.externals import joblib
-from bayes.bayes_train import load_dataset, get_dataset, split_train_and_test_set, multinamialNB_save_path, bernousNB_save_path
+from bayes.bayes_train import get_words, isChat
 
 '''
-    从文件读取模型并进行分类
+    测试分类器
 '''
 
-test_data = get_dataset()    # 从文本中测试
-train_set_tmp, train_label_tmp, test_set, test_label = split_train_and_test_set(test_data, 0.0)
-
-# test_data = load_dataset()     # 从测试集中测试
-# train_set_tmp, train_label_tmp, test_set, test_label = split_train_and_test_set(test_data, 0.7)
-
-'''
-    分离出来
-'''
-def divideTestSet(test_set):
-    for tset in test_set:
-        print(tset)
-        # pass
-
-'''
-    获取最新的模型
-'''
-def get_newest_model(model_path):
-    if os.path.exists(model_path):
-        # 按文件最后修改时间排序，reverse=True表示降序排序
-        filelist = sorted(os.listdir(model_path), key=lambda x: os.path.getctime(os.path.join(model_path, x)), reverse=True)
-        return os.path.join(model_path, filelist[0])
-
-
-
-'''
-    测试贝叶斯分类器
-'''
 def test_bayes(model_file):
     clf = joblib.load(model_file)
-    predict = clf.predict(test_set)
-
-    count = 0
-    for left, right, tset in zip(predict, test_label, test_set):
-        if left == "坐车":
-            left = "坐高铁"
-        if right == "坐车":
-            right = "坐高铁"
-        # print(left, "--", right, "--", tset)
-        # if left == right:
-        #     count += 1
-        if left != right:
-            print(left, "--", right, "--", tset)
-    print(model_file, "准确率：", count / len(test_label))
-
-
+    while True:
+        message = input("请说话：")
+        word_list = []
+        new_sentences, shinei_area = get_words(message)
+        word_list.append(new_sentences)
+        # print("word_list:", word_list)
+        if isChat(new_sentences) is False:  # 如果不是咨询类
+            predict = clf.predict(word_list)
+            for left in predict:
+                if left == "坐车":
+                    left = "坐高铁"
+                print(left, "-->", word_list, "-->", message)
 
 def main():
-    # test_bayes(get_newest_model(multinamialNB_save_path))
-    test_bayes(get_newest_model(bernousNB_save_path))
-    # print(get_newest_model(multinamialNB_save_path))
-    # print(get_newest_model(bernousNB_save_path))
-    # divideTestSet(test_set)
+    # newest_model = "./model/bernousNB/bernousNB_1576632950_9512195121951219_0_0.m"
+    newest_model = "./model/bernousNB/bernousNB_1593583220_9872746553552492_0_None.m"
+    test_bayes(newest_model)
 
 if __name__ == '__main__':
     main()
