@@ -25,7 +25,7 @@ def test_bayes(model_file):
 
 def main():
     # newest_model = "./model/bernousNB/bernousNB_1576632950_9512195121951219_0_0.m"
-    newest_model = "./model/bernousNB/bernousNB_1593583220_9872746553552492_0_None.m"
+    newest_model = "./model/bernousNB/bernousNB_1593601509_9873083024854574_0_None.m"
     test_bayes(newest_model)
 
 if __name__ == '__main__':

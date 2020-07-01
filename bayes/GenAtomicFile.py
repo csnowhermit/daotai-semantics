@@ -29,6 +29,11 @@ def genAtoFile():
             area_name = area_name.strip("\n").strip()
             mydict[area_name] = len(area_name)
 
+    # 添加我你他她它等指代名词
+    personal_pronouns = ['我', '你', '他', '她', '它']
+    for pron in personal_pronouns:
+        mydict[pron] = len(pron)
+
     # 默认升序排序，加reverse=True，降序排序
     sort_tuple_list = sorted([(value, key) for (key, value) in mydict.items()], reverse=True)
     print(sort_tuple_list)

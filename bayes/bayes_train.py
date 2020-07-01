@@ -120,9 +120,11 @@ stopwords = getWordList(stopwords_file)
     获取文档中的关键词
 '''
 def get_words(line):
+    # print(type(keywords), keywords)
     s = ""
     shinei_area = []
     arr = jieba.cut(line)
+    # print("/ ".join(arr))
     for a in arr:
         if a in zhuhai_c:    # Entity实体（地名）的泛化，坐城轨
             a = "地名1"
