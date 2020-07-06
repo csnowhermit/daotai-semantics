@@ -151,7 +151,7 @@ def test_bayes(model_file):
 
         if msgCalled == "onResult":    # 只解析正常获取的识别结果
             word_list = []
-            new_sentences, railway_dest, shinei_area = get_words(sentences)
+            new_sentences, railway_dest, shinei_area = get_words(sentences)    # 关键词列表，火车目的地列表，市内目的地列表
             if isChat(new_sentences) is False:  # 如果不是咨询类
                 if len(shinei_area) > 0:
                     print("导航", "-->", word_list, "-->", sentences)

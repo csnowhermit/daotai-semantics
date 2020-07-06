@@ -13,7 +13,7 @@ def test_bayes(model_file):
     while True:
         message = input("请说话：")
         word_list = []
-        new_sentences, railway_dest, shinei_area = get_words(message)
+        new_sentences, railway_dest, shinei_area = get_words(message)    # 关键词列表，火车目的地列表，市内目的地列表
         word_list.append(new_sentences)
         # print("word_list:", word_list)
         if isChat(new_sentences) is False:  # 如果不是咨询类
