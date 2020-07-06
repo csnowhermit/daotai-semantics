@@ -151,7 +151,7 @@ def test_bayes(model_file):
 
         if msgCalled == "onResult":    # 只解析正常获取的识别结果
             word_list = []
-            new_sentences, shinei_area = get_words(sentences)
+            new_sentences, railway_dest, shinei_area = get_words(sentences)
             if isChat(new_sentences) is False:  # 如果不是咨询类
                 if len(shinei_area) > 0:
                     print("导航", "-->", word_list, "-->", sentences)
@@ -194,7 +194,11 @@ def test_bayes(model_file):
 
                         yuyiDict = {}
                         yuyiDict["daotaiID"] = daotaiID
-                        yuyiDict["sentences"] = sentences
+
+                        if left == "车票查询":    # 车票查询续上目的地
+                            yuyiDict["sentences"] = sentences + "|" + railway_dest
+                        else:
+                            yuyiDict["sentences"] = sentences
                         yuyiDict["timestamp"] = timestamp
                         yuyiDict["intention"] = left  # 意图
                     # 之后将yuyiDict写入到消息队列
@@ -209,7 +213,11 @@ def test_bayes(model_file):
                     portraitDict["daotaiID"] = daotaiID
                     portraitDict["portrait"] = None  # 画像部分留空
                     portraitDict["savefile"] = ""  # 图片保存路径
-                    portraitDict["sentences"] = sentences  # 询问问题
+
+                    if left == "车票查询":    # 车票查询，续上目的地
+                        portraitDict["sentences"] = sentences + "|" + railway_dest  # 询问问题
+                    else:
+                        portraitDict["sentences"] = sentences  # 询问问题
                     portraitDict["intention"] = left  # 意图
                     portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,

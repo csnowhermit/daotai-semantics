@@ -117,22 +117,28 @@ stopwords = getWordList(stopwords_file)
 
 
 '''
-    获取文档中的关键词
+    获取文档中的关键词，分别返回关键词列表，火车目的地列表，市内地名列表
+    :param line 一句话
+    :return 关键词列表, 火车目的地列表, 市内地名列表
 '''
 def get_words(line):
     # print(type(keywords), keywords)
     s = ""
-    shinei_area = []
+    railway_dest = []    # 火车目的地列表
+    shinei_area = []    # 市内地名列表
     arr = jieba.cut(line)
     # print("/ ".join(arr))
     for a in arr:
         if a in zhuhai_c:    # Entity实体（地名）的泛化，坐城轨
+            railway_dest.append(a)
             a = "地名1"
         elif a in others:    # Entity实体（地名）的泛化，坐车（坐高铁）
+            railway_dest.append(a)
             a = "地名"
         elif a in destBus:   # Entity实体（地名）的泛化，坐大巴
+            railway_dest.append(a)
             a = "地名4"
-        elif a in shinei:    # Entity实体（市内地名）的泛化，市内地名（走导航刘恒）
+        elif a in shinei:    # Entity实体（市内地名）的泛化，市内地名（走导航）
             shinei_area.append(a)    # 市内地名单独提取，单独返回
             a = "市内地名"
         elif a in keywords:    # 其他关键字原样识别
@@ -141,7 +147,7 @@ def get_words(line):
             a = ""
         if len(a) > 0:
             s = s + a + " "
-    return s.strip(" "), shinei_area
+    return s.strip(" "), railway_dest, shinei_area
 
 
 '''
