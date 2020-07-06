@@ -10,7 +10,7 @@ import timer
 import face_recognition
 from config import *
 from mymodel import *
-from utils.commonutil import getFormatTime
+from utils.commonutil import getFormatTime, crop_face
 import configparser
 import pika
 from portrait_detect import getCap
@@ -32,10 +32,10 @@ if __name__ == '__main__':
     vhost = str(cf.get(nodeName, "vhost"))
     backstage_routingKey = str(cf.get(nodeName, "routingKey"))
 
-    # credentials = pika.PlainCredentials(username=username, password=password)
-    # connection = pika.BlockingConnection(
-    #     pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
-    # backstage_channel = connection.channel()
+    credentials = pika.PlainCredentials(username=username, password=password)
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
+    backstage_channel = connection.channel()
 
     frame_interval = 3  # Number of frames after which to run face detection
     fps_display_interval = 5  # seconds
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     print("face_detect:", face_detect)
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
-    cap = getCap(input_webcam)
+    cap = getCap(input_webcam)    # cv2.VideoCapture(0, cv2.CAP_DSHOW)
     portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
 
     start_time = time.time()
@@ -78,17 +78,39 @@ if __name__ == '__main__':
                     if w * h > face_area_threshold:
                         # print("mtcnn-bboxes--> ", bboxes)
                         # print("mtcnn-landmarks--> ", landmarks)
+
+                        # 这里新增来人的性别年龄识别
+                        image = Image.fromarray(frame)
+
+                        # 2.性别年龄检测
+                        tmp = crop_face(image, box, margin=40,
+                                        size=face_size)  # 裁剪脑袋部分，并resize，image：<class 'PIL.Image.Image'>
+                        faces = [[left, top, right, bottom]]  # 做成需要的格式：[[], [], []]
+                        face_imgs = np.empty((len(faces), face_size, face_size, 3))
+                        # face_imgs[0, :, :, :] = cv2.resize(np.asarray(tmp), (face_size, face_size))    # PIL.Image转为np.ndarray，不resize会报错：ValueError: could not broadcast input array from shape (165,165,3) into shape (64,64,3)
+                        face_imgs[0, :, :, :] = tmp
+                        print("face_imgs:", type(face_imgs), face_imgs.shape)
+
+                        results = age_gender_model.predict(face_imgs)  # 性别年龄识别
+                        predicted_genders = results[0]
+                        ages = np.arange(0, 101).reshape(101, 1)
+                        predicted_ages = results[1].dot(ages).flatten()
+
+                        gender = "F" if predicted_genders[0][0] > 0.5 else "M"
+                        age = int(predicted_ages[0])
+
                         commingDict = {}
                         commingDict["daotaiID"] = daotaiID
-                        commingDict["message"] = ""
+                        commingDict["sentences"] = gender + "," + str(age)  # sentences字段填性别和年龄，逗号隔开
                         commingDict["timestamp"] = str(int(time.time()) * 1000)
-                        commingDict["intention"] = "mycoming"    # 表示有人来了
+                        commingDict["intention"] = "mycoming"  # 表示有人来了
 
+                        print("commingDict: %s" % (commingDict))
                         portrait_log.logger.info("commingDict: %s" % (commingDict))
-                        # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                        #                                 routing_key=backstage_routingKey,
-                        #                                 body=str(commingDict))  # 将语义识别结果给到后端
-                        # time.sleep(3)    # 识别到有人来了，等人问完问题再进行识别
+                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                        routing_key=backstage_routingKey,
+                                                        body=str(commingDict))  # 将语义识别结果给到后端
+                        time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
             cv2.imshow("coming", frame)
             cv2.waitKey(1)
             # Check our current fps

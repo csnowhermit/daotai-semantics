@@ -2,6 +2,9 @@ import os
 import cv2
 import datetime
 import numpy as np
+from config import *
+from mymodel import age_gender_model
+
 
 '''
     通用工具

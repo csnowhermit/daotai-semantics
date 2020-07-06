@@ -116,5 +116,3 @@ if __name__ == '__main__':
     p1.start()
     time.sleep(5)
     p2.start()
-
-

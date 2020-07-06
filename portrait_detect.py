@@ -25,7 +25,7 @@ def getCap(input_webcam):
 
     cap_retry = 0
     while True:
-        cap = cv2.VideoCapture(input_webcam)
+        cap = cv2.VideoCapture(input_webcam, cv2.CAP_DSHOW)
         if cap.isOpened():
             return cap
         else:

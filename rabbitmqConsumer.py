@@ -11,7 +11,7 @@ def callback(ch, method, properties, body):
 if __name__ == '__main__':
     consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey = getRabbitConn("rabbit2backstage")
 
-    print("rabbit consumer2portrait 已启动：%s %s %s %s" % (consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
+    print("rabbit 已启动：%s %s %s %s" % (consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
 
     consumer_channel.basic_consume(queue=consumer_queueName, on_message_callback=callback,
                                    auto_ack=True)  # 这里写的是QUEUE_NAME，而不是routingKey

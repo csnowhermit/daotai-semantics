@@ -215,7 +215,7 @@ def test_bayes(model_file):
                     portraitDict["savefile"] = ""  # 图片保存路径
 
                     if left == "车票查询":    # 车票查询，续上目的地
-                        portraitDict["sentences"] = sentences + "|" + railway_dest  # 询问问题
+                        portraitDict["sentences"] = sentences + "|" + railway_dest  # 询问问题+目的地
                     else:
                         portraitDict["sentences"] = sentences  # 询问问题
                     portraitDict["intention"] = left  # 意图
