@@ -196,7 +196,10 @@ def test_bayes(model_file):
                         yuyiDict["daotaiID"] = daotaiID
 
                         if left == "车票查询":    # 车票查询续上目的地
-                            yuyiDict["sentences"] = sentences + "|" + railway_dest
+                            if len(railway_dest) > 0:
+                                yuyiDict["sentences"] = sentences + "|" + railway_dest[0]
+                            else:
+                                yuyiDict["sentences"] = sentences + "|" + ""    # 如果只识别到“车票查询”而没找到目的地名，直接传空
                         else:
                             yuyiDict["sentences"] = sentences
                         yuyiDict["timestamp"] = timestamp
