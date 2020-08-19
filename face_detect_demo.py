@@ -15,7 +15,9 @@ lock = threading.RLock()
 def Receive():
     # print("start Receive")
     # print("start Receive")
-    cap = cv2.VideoCapture("rtsp://admin:quickhigh123456@192.168.120.155/h264/ch1/sub/av_stream")
+    rtsp_url = "rtsp://admin:quickhigh123456@192.168.0.201/h264/ch1/sub/av_stream"
+    # rtsp_url = 0
+    cap = cv2.VideoCapture(rtsp_url)
     # cap = getCap(input_webcam)
     frame_interval = 3  # Number of frames after which to run face detection
     fps_display_interval = 5  # seconds
@@ -58,7 +60,7 @@ def percept():
                     left, top, right, bottom = box
                     w = right - left
                     h = bottom - top
-                    cv2.rectangle(frame, (int(left), int(top)), (int(right), int(bottom)), (255, 255, 255), 2)
+                    cv2.rectangle(frame, (int(left), int(top)), (int(right), int(bottom)), (0, 0, 255), 2)
 
             cv2.imshow("frame", frame)
             cv2.waitKey(1)
