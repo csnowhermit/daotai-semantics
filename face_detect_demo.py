@@ -1,8 +1,10 @@
+import os
 import cv2
 import time
 from mymodel import face_detect
 
 from utils.CapUtil import Stack
+from utils.dateUtil import formatTimestamp
 import threading
 
 '''
@@ -64,6 +66,9 @@ def percept():
 
             cv2.imshow("frame", frame)
             cv2.waitKey(1)
+
+            savefile = "D:/testData/" + formatTimestamp(time.time(), format="%Y%m%d_%H%M%S", ms=True) + ".jpg"
+            cv2.imwrite(savefile, frame)
 
 if __name__ == '__main__':
     p1 = threading.Thread(target=Receive)
