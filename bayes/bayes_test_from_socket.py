@@ -131,6 +131,7 @@ def test_bayes(model_file):
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
             # recvJson = json.loads(recvStr)
+            semantics_log.logger.info("来自语音端的消息：%s" % recvStr)
             recvJson = eval(recvStr)    # str转dict
             semantics_log.logger.info(recvJson)    # 所有传来的都会记录
             daotaiID = recvJson["daotaiID"]
