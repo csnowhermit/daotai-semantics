@@ -131,7 +131,7 @@ def test_bayes(model_file):
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
             # recvJson = json.loads(recvStr)
-            semantics_log.logger.info("来自语音端的消息：%s" % recvStr)
+            semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             recvJson = eval(recvStr)    # str转dict
             semantics_log.logger.info(recvJson)    # 所有传来的都会记录
             daotaiID = recvJson["daotaiID"]
@@ -139,7 +139,7 @@ def test_bayes(model_file):
             timestamp = recvJson["timestamp"]
             msgCalled = recvJson["msgCalled"]    # 被调方：onResult、onError、等等
         except ConnectionResetError as connectionResetError:
-            semantics_log.logger.warn("客户端已断开，正在等待重连: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+            semantics_log.logger.warn("客户端已断开，正在等待重连: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
             print("客户端已断开，正在等待重连: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
             conn, addr = sev.accept()
             semantics_log.logger.info("%s %s" % (conn, addr))
