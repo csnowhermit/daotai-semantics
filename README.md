@@ -20,3 +20,12 @@ var station_names ='@bjb|北京北|VAP|beijingbei|bjb|0@bjd|北京东|BOP|beijin
 
 脚本percept_coming_custom_stack.py和percept_coming_using_queue.py不能用，原因：识别模块初始化在config.py，import进来是在主线程中。
 
+# 3、启动脚本
+
+start/目录（以下脚本在windows下直接双击启动即可）中：
+
+bayes_from_socket.bat：语义端启动脚本；
+
+my_coming.bat：来人感知模块启动脚本；
+
+portrait.bat：用户画像模块启动脚本；
