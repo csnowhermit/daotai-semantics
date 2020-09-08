@@ -12,7 +12,6 @@ from utils.CapUtil import Stack
 import threading
 from keras.utils.data_utils import get_file
 from wide_resnet import WideResNet
-# from mymodel import face_detect, age_gender_model
 
 '''
     来人感知模块
@@ -25,8 +24,9 @@ lock = threading.RLock()
 
 def Receive():
     print("start Receive")
-    cap = cv2.VideoCapture(0)
-    # cap = getCap(input_webcam)
+    # cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(input_webcam)
+    # cap = getCap(input_webcam)    # 这种方式，在消费者子线程需要跑keras模型时，会打开摄像头失败
     print("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
     portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
     frame_interval = 3  # Number of frames after which to run face detection
