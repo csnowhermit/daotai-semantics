@@ -25,7 +25,6 @@ lock = threading.RLock()
 
 def Receive():
     print("start Receive")
-    print("start Receive")
     cap = cv2.VideoCapture(0)
     # cap = getCap(input_webcam)
     print("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))

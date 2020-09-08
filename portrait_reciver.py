@@ -42,7 +42,8 @@ def getRabbitConn(nodeName):
 
 # 定义一个回调函数来处理，这边的回调函数就是将信息打印出来。
 def callback(ch, method, properties, body):
-    portrait_log.logger.info("********** start a portrait detect ********** %s" % (getFormatTime(str(int(time.time())))))
+    print("++++++++++ start a portrait detect ++++++++++ %s" % (getFormatTime(str(int(time.time())))))
+    portrait_log.logger.info("++++++++++ start a portrait detect ++++++++++ %s" % (getFormatTime(str(int(time.time())))))
     print(" [x] Received %r" % body)
     portrait_log.logger.info(" [x] Received %r" % body)
     try:
@@ -55,7 +56,7 @@ def callback(ch, method, properties, body):
         source = recvDict["source"]
         daotaiID = recvDict["daotaiID"]
         timestamp = recvDict["timestamp"]
-        formatted_time = getFormatTime(timestamp)  # 得到格式化后的时间
+        formatted_time = getFormatTime(int(timestamp))  # 得到格式化后的时间
 
         if os.path.exists(portrait_img_path) is False:
             os.makedirs(portrait_img_path)
@@ -83,9 +84,11 @@ def callback(ch, method, properties, body):
         portraitDict["intention"] = recvDict["intention"]  # 意图
         portraitDict["intentionLevel"] = recvDict["intentionLevel"]    # 意图级别
 
+        print("complete-portrait: %s" % (portraitDict))
         portrait_log.logger.info("complete-portrait: %s" % (portraitDict))  # 写日志也行，入库也行
     except Exception as e:
         portrait_log.logger.error(traceback.format_exc())
+    print("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))
     portrait_log.logger.info("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))
 
 if __name__ == '__main__':
