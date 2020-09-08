@@ -75,6 +75,7 @@ if __name__ == '__main__':
                     left, top, right, bottom = box
                     w = right - left
                     h = bottom - top
+                    print("face_area:", w * h)
                     if w * h > face_area_threshold:
                         # print("mtcnn-bboxes--> ", bboxes)
                         # print("mtcnn-landmarks--> ", landmarks)

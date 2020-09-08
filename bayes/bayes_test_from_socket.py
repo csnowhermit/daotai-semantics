@@ -31,6 +31,9 @@ ask_sentenses_length = 5    # 当未包含关键字，且问话>5个字时，认
 semantics_logfile = 'D:/data/daotai_semantics.log'
 semantics_log = Logger(semantics_logfile, level='info')
 
+mq_logfile = 'D:/data/daotai_mq.log'
+mq_log = Logger(mq_logfile, level='info')
+
 def loadAnswers():
     with open("../kdata/intention_answer.txt", encoding="utf-8", errors="ignore") as fo:
         for line in fo.readlines():
@@ -123,8 +126,8 @@ def test_bayes(model_file):
         try:
             recvStr = bytes.decode(conn.recv(4096), encoding='utf-8')
             if len(recvStr) == 0:    # 如果是安卓客户端，当客户端断开时，服务端收到的是空包
-                empty_package_nums +=1
-                if empty_package_nums >= 20000:
+                empty_package_nums += 1
+                if empty_package_nums >= 2000:
                     raise ConnectionResetError
                 continue
             else:
@@ -169,6 +172,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
+                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))    # 单独写个日志
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -183,12 +187,13 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
+                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                 else:
                     word_list.append(new_sentences)
                     predict = clf.predict(word_list)
                     for left in predict:
-                        if left == "坐车":
-                            left = "坐高铁"
+                        # if left == "坐车":    # 坐车 不用转为 坐高铁 了，坐高铁 在库中找不到答案
+                        #     left = "坐高铁"
                         # answer = getAnswer(left)
                         # thread.start_new_thread(send_msg, ())    # 新开一个线程，通知前端
                         print(left, "-->", word_list, "-->", sentences)
@@ -210,6 +215,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
+                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -228,6 +234,7 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
+                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
             else:
                 print("咨询类", "-->", sentences)  # 咨询场景，判断标准：说话字数>5字
                 semantics_log.logger.info(("咨询类", "-->", sentences))
@@ -243,6 +250,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
+                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -257,6 +265,7 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
+                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
         else:    # 其他情况的处理
             pass
 

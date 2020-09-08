@@ -22,8 +22,8 @@ personal_luggage_list = ['bicycle', 'backpack',  'umbrella',
                         ]
 
 # 摄像机地址
-input_webcam = "rtsp://admin:quickhigh123456@192.168.0.155/h264/ch1/sub/av_stream"    # 字码流接入
-# input_webcam = 0
+# input_webcam = "rtsp://admin:quickhigh123456@192.168.0.155/h264/ch1/sub/av_stream"    # 字码流接入
+input_webcam = 0
 
 # cap = cv2.VideoCapture(input_webcam)
 

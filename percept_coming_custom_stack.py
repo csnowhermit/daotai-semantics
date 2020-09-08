@@ -10,7 +10,7 @@ import timer
 import face_recognition
 from config import *
 from mymodel import *
-from utils.commonutil import getFormatTime
+from utils.commonutil import getFormatTime, crop_face
 import configparser
 import pika
 from utils.CapUtil import Stack
@@ -92,9 +92,30 @@ def percept():
                     left, top, right, bottom = box
                     w = right - left
                     h = bottom - top
+                    print("face_area:", w * h)
                     if w * h > face_area_threshold:
                         # print("mtcnn-bboxes--> ", bboxes)
                         # print("mtcnn-landmarks--> ", landmarks)
+                        # 这里新增来人的性别年龄识别
+                        image = Image.fromarray(frame)
+
+                        # 2.性别年龄检测
+                        tmp = crop_face(image, box, margin=40,
+                                        size=face_size)  # 裁剪脑袋部分，并resize，image：<class 'PIL.Image.Image'>
+                        faces = [[left, top, right, bottom]]  # 做成需要的格式：[[], [], []]
+                        face_imgs = np.empty((len(faces), face_size, face_size, 3))
+                        # face_imgs[0, :, :, :] = cv2.resize(np.asarray(tmp), (face_size, face_size))    # PIL.Image转为np.ndarray，不resize会报错：ValueError: could not broadcast input array from shape (165,165,3) into shape (64,64,3)
+                        face_imgs[0, :, :, :] = tmp
+                        print("face_imgs:", type(face_imgs), face_imgs.shape)
+
+                        results = age_gender_model.predict(face_imgs)  # 性别年龄识别
+                        predicted_genders = results[0]
+                        ages = np.arange(0, 101).reshape(101, 1)
+                        predicted_ages = results[1].dot(ages).flatten()
+
+                        gender = "F" if predicted_genders[0][0] > 0.5 else "M"
+                        age = int(predicted_ages[0])
+
                         commingDict = {}
                         commingDict["daotaiID"] = daotaiID
                         commingDict["message"] = ""
