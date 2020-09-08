@@ -31,6 +31,10 @@ class Stack:
             self.items.clear()
         self.items.append(item)
 
+    # 清空缓冲区
+    def clear(self):
+        self.items.clear()
+
 def capture_thread(input_webcam, frame_buffer, lock):
     if input_webcam == "0":
         input_webcam = int(0)

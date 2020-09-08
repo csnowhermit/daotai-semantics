@@ -15,6 +15,7 @@ from sklearn.externals import joblib
 base_path = "D:/workspace/workspace_python/daotai-semantics"
 sys.path.append(base_path)
 from bayes.bayes_train import get_words, bernousNB_save_path, isChat
+from utils.commonutil import getFormatTime
 
 sys.path.append("..")
 from Logger import *
@@ -31,8 +32,8 @@ ask_sentenses_length = 5    # 当未包含关键字，且问话>5个字时，认
 semantics_logfile = 'D:/data/daotai_semantics.log'
 semantics_log = Logger(semantics_logfile, level='info')
 
-mq_logfile = 'D:/data/daotai_mq.log'
-mq_log = Logger(mq_logfile, level='info')
+bayes_mq_logfile = 'D:/data/daotai_bayes_mq.log'
+bayes_mq_log = Logger(bayes_mq_logfile, level='info')
 
 def loadAnswers():
     with open("../kdata/intention_answer.txt", encoding="utf-8", errors="ignore") as fo:
@@ -137,7 +138,8 @@ def test_bayes(model_file):
             print("语音端消息-原始内容：%s" % recvStr)
             semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             recvJson = eval(recvStr)    # str转dict
-            semantics_log.logger.info(recvJson)    # 所有传来的都会记录
+            print("recvJson: %s" % recvJson)
+            semantics_log.logger.info("recvJson: %s" % recvJson)    # 所有传来的都会记录
             daotaiID = recvJson["daotaiID"]
             sentences = recvJson["message"]
             timestamp = recvJson["timestamp"]
@@ -157,6 +159,7 @@ def test_bayes(model_file):
         if msgCalled == "onResult":    # 只解析正常获取的识别结果
             word_list = []
             new_sentences, railway_dest, shinei_area = get_words(sentences)    # 关键词列表，火车目的地列表，市内目的地列表
+            bayes_mq_log.logger.info("------------------ %s ------------------" % str(getFormatTime(int(time.time()))))
             if isChat(new_sentences) is False:  # 如果不是咨询类
                 if len(shinei_area) > 0:
                     print("导航", "-->", word_list, "-->", sentences)
@@ -172,7 +175,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
-                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))    # 单独写个日志
+                    bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))    # 单独写个日志
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -187,7 +190,7 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
-                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                    bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                 else:
                     word_list.append(new_sentences)
                     predict = clf.predict(word_list)
@@ -215,7 +218,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
-                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                    bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -234,7 +237,7 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
-                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                    bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
             else:
                 print("咨询类", "-->", sentences)  # 咨询场景，判断标准：说话字数>5字
                 semantics_log.logger.info(("咨询类", "-->", sentences))
@@ -250,7 +253,7 @@ def test_bayes(model_file):
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
-                    mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                    bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                     # 人物画像端
                     portraitDict = {}  # 人物画像要填的字段
@@ -265,7 +268,8 @@ def test_bayes(model_file):
                     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                    routing_key=portrait_routingKey,
                                                    body=str(portraitDict))  # 将语义结果发送到用户画像端
-                    mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                    bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+            bayes_mq_log.logger.info("++++++++++++++++++ %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
         else:    # 其他情况的处理
             pass
 

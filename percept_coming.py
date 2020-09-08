@@ -22,6 +22,9 @@ from portrait_detect import getCap
 if __name__ == '__main__':
     nodeName = "rabbit2backstage"    # 读取该节点的数据
 
+    comming_mq_logfile = 'D:/data/daotai_comming_mq.log'
+    comming_mq_log = Logger(comming_mq_logfile, level='info')
+
     cf = configparser.ConfigParser()
     cf.read("./kdata/config.conf")
     host = str(cf.get(nodeName, "host"))
@@ -111,6 +114,8 @@ if __name__ == '__main__':
                         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
+                        print("已写入消息队列-commingDict: %s" % str(commingDict))
+                        comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                         time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
             cv2.imshow("coming", frame)
             cv2.waitKey(1)

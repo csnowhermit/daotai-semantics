@@ -31,7 +31,7 @@ input_webcam = 0
 portrait_img_path = "D:/daotai/portrait_imgs/"
 
 # 人脸面积最小阈值
-face_area_threshold = 10000
+face_area_threshold = 1000
 
 # 询问人的有效框各扩大多少倍
 expand_multiple=0.5
