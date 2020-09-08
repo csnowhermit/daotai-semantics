@@ -16,9 +16,13 @@ var station_names ='@bjb|北京北|VAP|beijingbei|bjb|0@bjd|北京东|BOP|beijin
 
 # 2、来人感知模块
 
-​	使用脚本percept_coming.py。
+​	1、percept_coming.py：在webcam中会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
 
-脚本percept_coming_custom_stack.py和percept_coming_using_queue.py不能用，原因：识别模块初始化在config.py，import进来是在主线程中。
+​	2、percept_coming_custom_stack.py：采用自定义缓冲区多线程实现来人感知，已解决1中问题；
+
+​	3、percept_coming_custom_stack.py：queue.Queue()，先进先出队列，本质上并不能解决消费速度赶不上生产速度的情况，只是将图像暂存在队列中；
+
+
 
 # 3、启动脚本
 
