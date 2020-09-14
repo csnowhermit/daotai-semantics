@@ -116,3 +116,26 @@ def getFormatTime(timestamp):
         d = datetime.datetime.fromtimestamp(now)
     formatTimeStr = d.strftime("%Y%m%d%H%M%S%f")
     return formatTimeStr
+
+
+'''
+    批量解析一个数据包发来的多个json
+'''
+def resolving_recv(recvStr):
+    before_braces = []
+    end_braces = []    # 前后大括号位置
+    recvJsonArr = []    # 解析后的json保存成数组
+    for index, s in enumerate(recvStr):
+        if recvStr[index] == "{":
+            before_braces.append(index)
+        elif recvStr[index] == "}":
+            end_braces.append(index)
+
+    for i, j in zip(before_braces, end_braces):
+        recvStr = recvStr[i: j + 1]
+        try:
+            recvJson = eval(recvStr)
+            recvJsonArr.append(recvJson)
+        except Exception as e:
+            pass
+    return recvJsonArr

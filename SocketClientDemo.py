@@ -15,8 +15,8 @@ while True:
 
     msgDict = {}
     msgDict["daotaiID"] = "center01"
-    msgDict["message"] = msg
-    msgDict["timestamp"] = time.time()
+    msgDict["sentences"] = msg
+    msgDict["timestamp"] = int(time.time())
     msgDict["msgCalled"] = "onResult"
 
     p.send(str(msgDict).encode('utf-8'))  # 收发消息一定要二进制，记得编码

@@ -16,7 +16,9 @@ properties["age"] = 21
 
 comming["sentences"] = properties
 print(comming)
-print(json.loads(str(comming), encoding='utf-8'))
-
 
 print(cv2.CAP_DSHOW)
+
+box_areas = [100, 150, 140, 200, 120]
+print(max(box_areas))
+print(box_areas.index(max(box_areas)))

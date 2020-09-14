@@ -1,5 +1,6 @@
 import sys
 import time
+import socket
 import numpy as np
 from PIL import Image
 
@@ -24,34 +25,18 @@ lock = threading.RLock()
 
 def Receive():
     print("start Receive")
-    # cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture(input_webcam)
+    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(input_webcam)
     # cap = getCap(input_webcam)    # 这种方式，在消费者子线程需要跑keras模型时，会打开摄像头失败
     print("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
     portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
-    frame_interval = 3  # Number of frames after which to run face detection
-    fps_display_interval = 5  # seconds
-    frame_count = 0
 
-    start_time = time.time()
     while True:
         ret, frame = cap.read()
         if ret is True:
             lock.acquire()
             frame_buffer.push(frame)
             lock.release()
-        # if (frame_count % frame_interval) == 0:  # 跳帧处理，解决算法和采集速度不匹配
-        #     if ret is True:
-        #         # q.put(frame)
-        #         lock.acquire()
-        #         frame_buffer.push(frame)
-        #         lock.release()
-        #     # Check our current fps
-        #     end_time = time.time()
-        #     if (end_time - start_time) > fps_display_interval:
-        #         frame_rate = int(frame_count / (end_time - start_time))
-        #         start_time = time.time()
-        #         frame_count = 0
 
 def percept():
     nodeName = "rabbit2backstage"  # 读取该节点的数据
@@ -74,6 +59,10 @@ def percept():
         pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
     # connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
     backstage_channel = connection.channel()
+
+    # # 创建socket，将来人感知的消息发送到安卓语音识别端
+    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # client.connect(('192.168.0.144', 50007))
 
     # 人脸检测
     global face_detect    # 子线程里加载模型，需要将模型指定成全局变量
@@ -107,49 +96,62 @@ def percept():
             else:
                 print("faces.faceNum:", len(bboxes))
                 portrait_log.logger.info("faces.faceNum: %s" % (len(bboxes)))
+                box_areas = []
                 for i in range(0, len(bboxes)):
                     box = bboxes[i]
                     left, top, right, bottom = box
                     w = right - left
                     h = bottom - top
-                    print("face_area:", w * h)
-                    if w * h > face_area_threshold:
-                        # print("mtcnn-bboxes--> ", bboxes)
-                        # print("mtcnn-landmarks--> ", landmarks)
-                        # 这里新增来人的性别年龄识别
-                        image = Image.fromarray(frame)
+                    box_areas.append(w * h)    # 人头的面积
 
-                        # 2.性别年龄检测
-                        tmp = crop_face(image, box, margin=40,
-                                        size=face_size)  # 裁剪脑袋部分，并resize，image：<class 'PIL.Image.Image'>
-                        faces = [[left, top, right, bottom]]  # 做成需要的格式：[[], [], []]
-                        face_imgs = np.empty((len(faces), face_size, face_size, 3))
-                        # face_imgs[0, :, :, :] = cv2.resize(np.asarray(tmp), (face_size, face_size))    # PIL.Image转为np.ndarray，不resize会报错：ValueError: could not broadcast input array from shape (165,165,3) into shape (64,64,3)
-                        face_imgs[0, :, :, :] = tmp
-                        print("face_imgs:", type(face_imgs), face_imgs.shape)
+                # 找最大的人脸及坐标
+                max_face_area = max(box_areas)    # 最大的人脸面积
+                max_face_box = bboxes[box_areas.index(max_face_area)]    # 最大人脸面积框对应的坐标
+                print("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
+                portrait_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
+                if max_face_area > face_area_threshold:
+                    # print("mtcnn-bboxes--> ", bboxes)
+                    # print("mtcnn-landmarks--> ", landmarks)
+                    # 这里新增来人的性别年龄识别
+                    image = Image.fromarray(frame)
 
-                        results = age_gender_model.predict(face_imgs)  # 性别年龄识别
-                        predicted_genders = results[0]
-                        ages = np.arange(0, 101).reshape(101, 1)
-                        predicted_ages = results[1].dot(ages).flatten()
+                    # 2.性别年龄检测
+                    tmp = crop_face(image, box, margin=40,
+                                    size=face_size)  # 裁剪脑袋部分，并resize，image：<class 'PIL.Image.Image'>
+                    faces = [[left, top, right, bottom]]  # 做成需要的格式：[[], [], []]
+                    face_imgs = np.empty((len(faces), face_size, face_size, 3))
+                    # face_imgs[0, :, :, :] = cv2.resize(np.asarray(tmp), (face_size, face_size))    # PIL.Image转为np.ndarray，不resize会报错：ValueError: could not broadcast input array from shape (165,165,3) into shape (64,64,3)
+                    face_imgs[0, :, :, :] = tmp
+                    print("face_imgs:", type(face_imgs), face_imgs.shape)
 
-                        gender = "F" if predicted_genders[0][0] > 0.5 else "M"
-                        age = int(predicted_ages[0])
+                    results = age_gender_model.predict(face_imgs)  # 性别年龄识别
+                    predicted_genders = results[0]
+                    ages = np.arange(0, 101).reshape(101, 1)
+                    predicted_ages = results[1].dot(ages).flatten()
 
-                        commingDict = {}
-                        commingDict["daotaiID"] = daotaiID
-                        commingDict["message"] = gender + "," + str(age)  # sentences字段填性别和年龄，逗号隔开
-                        commingDict["timestamp"] = str(int(time.time()) * 1000)
-                        commingDict["intention"] = "mycoming"  # 表示有人来了
+                    gender = "F" if predicted_genders[0][0] > 0.5 else "M"
+                    age = int(predicted_ages[0])
 
-                        print("commingDict: %s" % (commingDict))
-                        portrait_log.logger.info("commingDict: %s" % (commingDict))
-                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                        routing_key=backstage_routingKey,
-                                                        body=str(commingDict))  # 将语义识别结果给到后端
-                        print("已写入消息队列-commingDict: %s" % str(commingDict))
-                        comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
-                        time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
+                    left, top, right, bottom = max_face_box
+
+                    commingDict = {}
+                    commingDict["daotaiID"] = daotaiID
+                    commingDict["sentences"] = "%s,%s,%s,%s,%s,%s,%s" % (gender, str(age), str(left), str(top), str(right), str(bottom), str(face_area_threshold))    # sentences字段填性别、年龄、位置（左上右下），逗号隔开
+                    commingDict["timestamp"] = str(int(time.time()) * 1000)
+                    commingDict["intention"] = "mycoming"  # 表示有人来了
+
+                    # # 将来人消息发送到语音端
+                    # client.send(str(commingDict).encode('utf-8'))  # 收发消息一定要二进制，记得编码
+
+                    print("commingDict: %s" % (commingDict))
+                    portrait_log.logger.info("commingDict: %s" % (commingDict))
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(commingDict))  # 将语义识别结果给到后端
+                    print("已写入消息队列-commingDict: %s" % str(commingDict))
+                    comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
+                    time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
+
             cv2.imshow("frame", frame)
             cv2.waitKey(1)
 
