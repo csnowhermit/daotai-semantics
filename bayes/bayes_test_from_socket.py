@@ -136,10 +136,11 @@ def test_bayes(model_file):
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
 
-            # print("语音端消息-原始内容：%s" % recvStr)
+            print("语音端消息-原始内容：%s" % recvStr)
             # semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             # recvJson = eval(recvStr)    # str转dict，这样只能解析单个json的情况，多个json在一个数据包发来会解析失败
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
+            print("============", len(recvJsonArr))
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
                 print("recvJson: %s" % recvJson)

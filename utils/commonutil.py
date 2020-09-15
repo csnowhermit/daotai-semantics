@@ -1,6 +1,7 @@
 import os
 import cv2
 import datetime
+import traceback
 import numpy as np
 from config import *
 
@@ -132,10 +133,10 @@ def resolving_recv(recvStr):
             end_braces.append(index)
 
     for i, j in zip(before_braces, end_braces):
-        recvStr = recvStr[i: j + 1]
+        line = recvStr[i: j + 1]
         try:
-            recvJson = eval(recvStr)
+            recvJson = eval(line)
             recvJsonArr.append(recvJson)
         except Exception as e:
-            pass
+            traceback.print_exc()
     return recvJsonArr
