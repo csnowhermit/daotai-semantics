@@ -159,8 +159,8 @@ def test_bayes(model_file):
                         "------------------ start %s ------------------" % str(getFormatTime(int(time.time()))))
                     if isChat(new_sentences) is False:  # 如果不是咨询类
                         if len(shinei_area) > 0:
-                            print("导航", "-->", word_list, "-->", sentences)
-                            bayes_mq_log.logger.info(("导航", "-->", word_list, "-->", sentences))
+                            print("导航", "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                            bayes_mq_log.logger.info(("导航", "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                             yuyiDict = {}
                             yuyiDict["daotaiID"] = daotaiID
@@ -198,8 +198,8 @@ def test_bayes(model_file):
                                 #     left = "坐高铁"
                                 # answer = getAnswer(left)
                                 # thread.start_new_thread(send_msg, ())    # 新开一个线程，通知前端
-                                print(left, "-->", word_list, "-->", sentences)
-                                bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences))
+                                print(left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                                bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                                 yuyiDict = {}
                                 yuyiDict["daotaiID"] = daotaiID
@@ -240,8 +240,8 @@ def test_bayes(model_file):
                             print("portraitDict: %s" % str(portraitDict))
                             bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                     else:
-                        print("咨询类", "-->", sentences)  # 咨询场景，判断标准：说话字数>5字
-                        bayes_mq_log.logger.info(("咨询类", "-->", sentences))
+                        print("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
+                        bayes_mq_log.logger.info(("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                         if str(sentences.strip()).__contains__("转人工"):
                             yuyiDict = {}
