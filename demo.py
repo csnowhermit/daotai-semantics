@@ -22,3 +22,6 @@ print(cv2.CAP_DSHOW)
 box_areas = [100, 150, 140, 200, 120]
 print(max(box_areas))
 print(box_areas.index(max(box_areas)))
+
+time_str = "1600312746347"
+print(getFormatTime(time_str))

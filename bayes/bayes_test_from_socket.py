@@ -151,7 +151,7 @@ def test_bayes(model_file):
                 msgCalled = recvJson["msgCalled"]  # 被调方：onResult、onError、等等
 
                 if msgCalled == "onSpeak":
-                    print("%s ****** %s" % (sentences, str(getFormatTime(int(time.time())))))
+                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onResult":  # 只解析正常获取的识别结果
                     word_list = []
                     new_sentences, railway_dest, shinei_area = get_words(sentences)  # 关键词列表，火车目的地列表，市内目的地列表
