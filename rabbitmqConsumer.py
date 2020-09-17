@@ -9,7 +9,7 @@ def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
 
 if __name__ == '__main__':
-    consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey = getRabbitConn("rabbit2backstage")
+    consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey = getRabbitConn("rabbit2portrait")
 
     print("rabbit 已启动：%s %s %s %s" % (consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
 

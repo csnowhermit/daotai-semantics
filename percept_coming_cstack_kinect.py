@@ -1,6 +1,7 @@
 import sys
 import time
 import socket
+from utils.pyKinectUtil import Kinect
 import numpy as np
 from PIL import Image
 
@@ -16,6 +17,7 @@ from wide_resnet import WideResNet
 
 '''
     来人感知模块
+    Note：获取Kinect画面
     Note：自定义Stack(stack_szie)，解决消费速度跟不上生成速度的情况；
     Note：percept_coming.py中也可解决，但在webcam中会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
 '''
@@ -25,17 +27,13 @@ lock = threading.RLock()
 
 def Receive():
     print("start Receive")
-    cap = cv2.VideoCapture(0)
-    # cap = cv2.VideoCapture(input_webcam)
-    # cap = getCap(input_webcam)    # 这种方式，在消费者子线程需要跑keras模型时，会打开摄像头失败
-    print("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
-    portrait_log.logger.info("cap.isOpened(): %s %s" % (cap.isOpened(), input_webcam))
 
+    kinect = Kinect()
     while True:
-        ret, frame = cap.read()
-        if ret is True:
+        color_data = kinect.get_the_data_of_color_depth_infrared_image()  # 获得最新的彩色和深度图像以及红外图像
+        if color_data[0] is not None:
             lock.acquire()
-            frame_buffer.push(frame)
+            frame_buffer.push(color_data[0])
             lock.release()
 
 def percept():
@@ -88,7 +86,7 @@ def percept():
             frame_buffer.clear()    # 每次拿之后清空缓冲区
             lock.release()
 
-            # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
+            # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (1080, 1920, 3)，（高，宽，通道）
             height, width, channel = frame.shape
             bboxes, landmarks = face_detect.detect_face(frame)
             bboxes, landmarks = face_detect.get_square_bboxes(bboxes, landmarks, fixed="height")  # 以高为基准，获得等宽的矩形
@@ -153,6 +151,8 @@ def percept():
                     comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                     # time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
 
+            if height != 480 or width != 640:
+                frame = cv2.resize(frame, (640, 480))    # resize时的顺序为：宽，高
             cv2.imshow("frame", frame)
             cv2.waitKey(1)
 

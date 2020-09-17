@@ -324,6 +324,12 @@ if __name__ == '__main__':
         t = time.time()
         color_data = kinect.get_the_data_of_color_depth_infrared_image()    # 获得最新的彩色和深度图像以及红外图像
         # color_data = kinect.get_the_last_color()  # 获取最新的图像数据
-        cv.imshow('kinect', color_data[0])
-        cv.waitKey(1)
+        # print("color_data:", type(color_data), color_data[0].shape)
+        if color_data[0] is not None:
+            cv.imshow('kinect', color_data[0])
+            cv.waitKey(1)
+            print(color_data[0].shape)
+            cv.imwrite("d:/logs/kinect/" + str(time.time()) + ".jpg", color_data[0])
+        else:
+            print("grab failed!!!")
         print("耗时：", time.time() - t)
