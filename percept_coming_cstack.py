@@ -150,7 +150,7 @@ def percept():
                                                     body=str(commingDict))  # 将语义识别结果给到后端
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
                     comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
-                    time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
+                    # time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
 
             cv2.imshow("frame", frame)
             cv2.waitKey(1)

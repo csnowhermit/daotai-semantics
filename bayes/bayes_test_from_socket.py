@@ -129,28 +129,30 @@ def test_bayes(model_file):
             recvStr = bytes.decode(conn.recv(4096), encoding='utf-8')
             if len(recvStr) == 0:    # 如果是安卓客户端，当客户端断开时，服务端收到的是空包
                 empty_package_nums += 1
-                if empty_package_nums >= 2000:
+                if empty_package_nums >= 200:
                     raise ConnectionResetError
                 continue
             else:
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
 
-            print("语音端消息-原始内容：%s" % recvStr)
+            # print("语音端消息-原始内容：%s" % recvStr)
             # semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             # recvJson = eval(recvStr)    # str转dict，这样只能解析单个json的情况，多个json在一个数据包发来会解析失败
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
-            print("============", len(recvJsonArr))
+            # print("============", len(recvJsonArr))
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
-                print("recvJson: %s" % recvJson)
+                # print("recvJson: %s" % recvJson)
                 semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
                 daotaiID = recvJson["daotaiID"]
                 sentences = recvJson["sentences"]    # 现在安卓端、语义端、后端都用sentences字段
                 timestamp = recvJson["timestamp"]
                 msgCalled = recvJson["msgCalled"]  # 被调方：onResult、onError、等等
 
-                if msgCalled == "onResult":  # 只解析正常获取的识别结果
+                if msgCalled == "onSpeak":
+                    print("%s ****** %s" % (sentences, str(getFormatTime(int(time.time())))))
+                elif msgCalled == "onResult":  # 只解析正常获取的识别结果
                     word_list = []
                     new_sentences, railway_dest, shinei_area = get_words(sentences)  # 关键词列表，火车目的地列表，市内目的地列表
                     bayes_mq_log.logger.info(
