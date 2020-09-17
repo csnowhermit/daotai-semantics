@@ -1,0 +1,1 @@
+cmd /k "cd /d D:\workspace\workspace_python/daotai-semantics&&activate dlp&&python percept_coming_cstack_kinect.py"
