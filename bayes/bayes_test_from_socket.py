@@ -89,12 +89,12 @@ def getRabbitConn(nodeName):
 
     credentials = pika.PlainCredentials(username=username, password=password)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
-    # connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
+    connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
     channel = connection.channel()
     # channel.queue_declare(queue=routingKey, durable=True)    # 定义持久化队列
     # channel.queue_declare(queue=routingKey)  # 定义持久化队列
 
-    return channel, EXCHANGE_NAME, routingKey
+    return connection, channel, EXCHANGE_NAME, routingKey
 
 '''
     测试多项式分类器
@@ -102,13 +102,13 @@ def getRabbitConn(nodeName):
 def test_bayes(model_file):
     clf = joblib.load(model_file)
     # loadAnswers()    # 加载 意图-答案 表
-    backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-    semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s" % (backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-    print("rabbit2backstage producer 已启动：%s %s %s" % (backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+    backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
+    semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+    print("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
 
-    portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
-    semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s" % (portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
-    print("rabbit2portrait producer 已启动：%s %s %s" % (portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
+    portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
+    semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
+    print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
 
     sev = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP连接
     HOST, PORT = getSocketConfig()
@@ -136,11 +136,23 @@ def test_bayes(model_file):
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
 
-            # print("语音端消息-原始内容：%s" % recvStr)
+            print("语音端消息-原始内容：%s" % recvStr)
             # semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             # recvJson = eval(recvStr)    # str转dict，这样只能解析单个json的情况，多个json在一个数据包发来会解析失败
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
             # print("============", len(recvJsonArr))
+
+            if backstage_connection.is_open is True and backstage_channel.is_open is True:
+                print("backstage is opened")
+                pass
+            else:
+                backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
+
+            if portrait_connection.is_open is True and portrait_channel.is_open is True:
+                print("portrait is opened")
+                pass
+            else:
+                portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
                 # print("recvJson: %s" % recvJson)

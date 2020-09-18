@@ -32,3 +32,5 @@ heartbeatDict["sentences"] = ""
 heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
 heartbeatDict["intention"] = "heartbeat"  # 心跳
 print(heartbeatDict)
+
+print(time.time())
