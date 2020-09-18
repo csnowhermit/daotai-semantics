@@ -25,3 +25,10 @@ print(box_areas.index(max(box_areas)))
 
 time_str = "1600312746347"
 print(getFormatTime(time_str))
+
+heartbeatDict = {}
+heartbeatDict["daotaiID"] = "center01"
+heartbeatDict["sentences"] = ""
+heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
+heartbeatDict["intention"] = "heartbeat"  # 心跳
+print(heartbeatDict)

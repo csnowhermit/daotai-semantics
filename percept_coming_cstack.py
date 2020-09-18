@@ -82,6 +82,18 @@ def percept():
     age_gender_model.load_weights(fpath)
 
     while True:
+        if int(time.time()) % 5 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制
+            heartbeatDict = {}
+            heartbeatDict["daotaiID"] = daotaiID
+            heartbeatDict["sentences"] = ""
+            heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
+            heartbeatDict["intention"] = "heartbeat"  # 心跳
+
+            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                            routing_key=backstage_routingKey,
+                                            body=heartbeatDict)
+            print("heartbeatDict:", heartbeatDict)
+
         if frame_buffer.size() > 0:
             lock.acquire()
             frame = frame_buffer.pop()    # 每次拿最新的
