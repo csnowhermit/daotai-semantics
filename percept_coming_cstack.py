@@ -1,6 +1,7 @@
 import sys
 import time
 import socket
+import traceback
 import numpy as np
 from PIL import Image
 
@@ -82,17 +83,17 @@ def percept():
     age_gender_model.load_weights(fpath)
 
     while True:
-        if int(time.time()) % 10 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题：因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
-            heartbeatDict = {}
-            heartbeatDict["daotaiID"] = daotaiID
-            heartbeatDict["sentences"] = ""
-            heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
-            heartbeatDict["intention"] = "heartbeat"  # 心跳
-
-            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                            routing_key=backstage_routingKey,
-                                            body=str(heartbeatDict))
-            print("heartbeatDict:", heartbeatDict)
+        # if int(time.time()) % 10 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题：因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
+        #     heartbeatDict = {}
+        #     heartbeatDict["daotaiID"] = daotaiID
+        #     heartbeatDict["sentences"] = ""
+        #     heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
+        #     heartbeatDict["intention"] = "heartbeat"  # 心跳
+        #
+        #     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+        #                                     routing_key=backstage_routingKey,
+        #                                     body=str(heartbeatDict))
+        #     print("heartbeatDict:", heartbeatDict)
 
         if frame_buffer.size() > 0:
             lock.acquire()
@@ -158,9 +159,28 @@ def percept():
 
                     print("commingDict: %s" % (commingDict))
                     portrait_log.logger.info("commingDict: %s" % (commingDict))
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(commingDict))  # 将语义识别结果给到后端
+                    try:
+                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                        routing_key=backstage_routingKey,
+                                                        body=str(commingDict))  # 将语义识别结果给到后端
+                    except ConnectionResetError as e:
+                        comming_mq_log.logger.error("ConnectionResetError: %s", traceback.format_exc())
+                        credentials = pika.PlainCredentials(username=username, password=password)
+                        connection = pika.BlockingConnection(
+                            pika.ConnectionParameters(host=host, port=port, virtual_host=vhost,
+                                                      credentials=credentials))
+                        connection.process_data_events()  # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
+                        backstage_channel = connection.channel()
+
+                        comming_mq_log.logger.info("rabbit2portrait producer 已重连：%s %s %s %s" % (
+                            connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+                        print("rabbit2portrait producer 已重连：%s %s %s %s" % (
+                            connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+
+                        # 重连后再发一次
+                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                        routing_key=backstage_routingKey,
+                                                        body=str(commingDict))  # 将语义识别结果给到后端
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
                     comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                     # time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
