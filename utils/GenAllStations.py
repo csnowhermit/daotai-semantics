@@ -19,11 +19,16 @@ def genStationList():
 
     for p in provinces:
         station_names.append(p)
+        if p in ['北京', '天津', '上海', '重庆']:
+            station_names.append(p + "市")
+        else:
+            station_names.append(p + "省")
 
     with open("../kdata/all_station.txt", encoding="utf-8") as fo:
         for line in fo.readlines():
             arr = line.strip().split("|")
             station_names.append(arr[1].replace(' ', ''))
+            station_names.append(arr[1].replace(' ', '') + "站")
 
     with open("../kdata/others.txt", encoding="utf-8", mode="w") as fo:
         for station in station_names:
