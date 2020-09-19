@@ -142,17 +142,17 @@ def test_bayes(model_file):
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
             # print("============", len(recvJsonArr))
 
-            if backstage_connection.is_open is True and backstage_channel.is_open is True:
-                print("backstage is opened")
-                pass
-            else:
-                backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-
-            if portrait_connection.is_open is True and portrait_channel.is_open is True:
-                print("portrait is opened")
-                pass
-            else:
-                portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
+            # if backstage_connection.is_open is True and backstage_channel.is_open is True:
+            #     print("backstage is opened")
+            #     pass
+            # else:
+            #     backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
+            #
+            # if portrait_connection.is_open is True and portrait_channel.is_open is True:
+            #     print("portrait is opened")
+            #     pass
+            # else:
+            #     portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
                 # print("recvJson: %s" % recvJson)
