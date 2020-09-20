@@ -162,7 +162,29 @@ def test_bayes(model_file):
                 timestamp = recvJson["timestamp"]
                 msgCalled = recvJson["msgCalled"]  # 被调方：onResult、onError、等等
 
-                if msgCalled == "onSpeak":
+                if msgCalled == "onBeginOfSpeech":
+                    yuyiDict = {}
+                    yuyiDict["daotaiID"] = daotaiID
+                    yuyiDict["sentences"] = sentences
+                    yuyiDict["timestamp"] = timestamp
+                    yuyiDict["intention"] = "onBeginOfSpeech"  # 可以开始说话了
+
+                    # 之后将yuyiDict写入到消息队列
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                elif msgCalled == "onEndOfSpeech":
+                    yuyiDict = {}
+                    yuyiDict["daotaiID"] = daotaiID
+                    yuyiDict["sentences"] = sentences
+                    yuyiDict["timestamp"] = timestamp
+                    yuyiDict["intention"] = "onEndOfSpeech"  # 停止说话
+
+                    # 之后将yuyiDict写入到消息队列
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onResult":  # 只解析正常获取的识别结果
                     word_list = []
