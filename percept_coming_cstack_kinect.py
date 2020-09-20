@@ -85,7 +85,7 @@ def percept():
             heartbeatDict = {}
             heartbeatDict["daotaiID"] = daotaiID
             heartbeatDict["sentences"] = ""
-            heartbeatDict["timestamp"] = str(int(time.time()) * 1000)
+            heartbeatDict["timestamp"] = str(int(time.time() * 1000))
             heartbeatDict["intention"] = "heartbeat"  # 心跳
 
             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
@@ -149,7 +149,7 @@ def percept():
                     commingDict = {}
                     commingDict["daotaiID"] = daotaiID
                     commingDict["sentences"] = "%s,%s,%s,%s,%s,%s,%s,%s,%s" % (gender, str(age), str(left), str(top), str(right), str(bottom), str(face_area_threshold), str(height), str(width))    # sentences字段填性别、年龄、位置（左上右下），逗号隔开
-                    commingDict["timestamp"] = str(int(time.time()) * 1000)
+                    commingDict["timestamp"] = str(int(time.time() * 1000))
                     commingDict["intention"] = "mycoming"  # 表示有人来了
 
                     # # 将来人消息发送到语音端
