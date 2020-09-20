@@ -167,7 +167,7 @@ def test_bayes(model_file):
                     yuyiDict["daotaiID"] = daotaiID
                     yuyiDict["sentences"] = sentences
                     yuyiDict["timestamp"] = timestamp
-                    yuyiDict["intention"] = "onBeginOfSpeech"  # 可以开始说话了
+                    yuyiDict["intention"] = "onBeginOfSpeech"  # 开始听写
 
                     # 之后将yuyiDict写入到消息队列
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
@@ -179,7 +179,7 @@ def test_bayes(model_file):
                     yuyiDict["daotaiID"] = daotaiID
                     yuyiDict["sentences"] = sentences
                     yuyiDict["timestamp"] = timestamp
-                    yuyiDict["intention"] = "onEndOfSpeech"  # 停止说话
+                    yuyiDict["intention"] = "onEndOfSpeech"  # 停止听写
 
                     # 之后将yuyiDict写入到消息队列
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,

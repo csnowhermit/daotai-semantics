@@ -6,7 +6,8 @@ from portrait_reciver import getRabbitConn
 
 # 定义一个回调函数来处理，这边的回调函数就是将信息打印出来。
 def callback(ch, method, properties, body):
-    print(" [x] Received %r" % body)
+    recvStr = bytes.decode(body, encoding='utf-8')
+    print(" [x] Received %r" % recvStr)
 
 if __name__ == '__main__':
     consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey = getRabbitConn("rabbit2backstage")
