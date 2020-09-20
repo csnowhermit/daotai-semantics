@@ -205,7 +205,7 @@ def test_bayes(model_file):
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            print("yuyiDict: %s" % str(yuyiDict))
+                            # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))  # 单独写个日志
 
                             # 人物画像端
@@ -221,7 +221,7 @@ def test_bayes(model_file):
                             portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                            routing_key=portrait_routingKey,
                                                            body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            print("portraitDict: %s" % str(portraitDict))
+                            # print("portraitDict: %s" % str(portraitDict))
                             bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                         else:
                             word_list.append(new_sentences)
@@ -251,7 +251,7 @@ def test_bayes(model_file):
                                 backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                                 routing_key=backstage_routingKey,
                                                                 body=str(yuyiDict))  # 将语义识别结果给到后端
-                                print("yuyiDict: %s" % str(yuyiDict))
+                                # print("yuyiDict: %s" % str(yuyiDict))
                                 bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                                 # 人物画像端
@@ -271,7 +271,7 @@ def test_bayes(model_file):
                                 portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                                routing_key=portrait_routingKey,
                                                                body=str(portraitDict))  # 将语义结果发送到用户画像端
-                                print("portraitDict: %s" % str(portraitDict))
+                                # print("portraitDict: %s" % str(portraitDict))
                                 bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                     else:
                         print("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
@@ -288,7 +288,7 @@ def test_bayes(model_file):
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            print("yuyiDict: %s" % str(yuyiDict))
+                            # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                             # 人物画像端
@@ -304,7 +304,7 @@ def test_bayes(model_file):
                             portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                            routing_key=portrait_routingKey,
                                                            body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            print("portraitDict: %s" % str(portraitDict))
+                            # print("portraitDict: %s" % str(portraitDict))
                             bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                         else:    # 没有出现“转人工”，且听不懂
                             yuyiDict = {}
@@ -317,7 +317,7 @@ def test_bayes(model_file):
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            print("yuyiDict: %s" % str(yuyiDict))
+                            # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
                             # 人物画像端
@@ -333,7 +333,7 @@ def test_bayes(model_file):
                             portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                                            routing_key=portrait_routingKey,
                                                            body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            print("portraitDict: %s" % str(portraitDict))
+                            # print("portraitDict: %s" % str(portraitDict))
                             bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
 
                     bayes_mq_log.logger.info(
