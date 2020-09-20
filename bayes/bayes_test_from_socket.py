@@ -135,8 +135,7 @@ def test_bayes(model_file):
             else:
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
-
-            print("语音端消息-原始内容：%s" % recvStr)
+            # print("语音端消息-原始内容：%s" % recvStr)
             # semantics_log.logger.info("语音端消息-原始内容：%s" % recvStr)    # 原始内容保存日志（没说话报的10118错误也会收到并保存）
             # recvJson = eval(recvStr)    # str转dict，这样只能解析单个json的情况，多个json在一个数据包发来会解析失败
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
@@ -193,8 +192,8 @@ def test_bayes(model_file):
                         "------------------ start %s ------------------" % str(getFormatTime(int(time.time()))))
                     if isChat(new_sentences) is False:  # 如果不是咨询类
                         if len(shinei_area) > 0:
-                            print("导航", "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
-                            bayes_mq_log.logger.info(("导航", "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
+                            print("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                            bayes_mq_log.logger.info(("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                             yuyiDict = {}
                             yuyiDict["daotaiID"] = daotaiID
@@ -247,32 +246,33 @@ def test_bayes(model_file):
                                     yuyiDict["sentences"] = sentences
                                 yuyiDict["timestamp"] = timestamp
                                 yuyiDict["intention"] = "听得懂|" + left  # 意图
-                            # 之后将yuyiDict写入到消息队列
-                            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                            routing_key=backstage_routingKey,
-                                                            body=str(yuyiDict))  # 将语义识别结果给到后端
-                            print("yuyiDict: %s" % str(yuyiDict))
-                            bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
-                            # 人物画像端
-                            portraitDict = {}  # 人物画像要填的字段
-                            portraitDict["source"] = "yuyi"  # 标识来源是语义yuyi端还是backstage后端
-                            portraitDict["timestamp"] = timestamp
-                            portraitDict["daotaiID"] = daotaiID
-                            portraitDict["portrait"] = None  # 画像部分留空
-                            portraitDict["savefile"] = ""  # 图片保存路径
+                                # 之后将yuyiDict写入到消息队列
+                                backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                                routing_key=backstage_routingKey,
+                                                                body=str(yuyiDict))  # 将语义识别结果给到后端
+                                print("yuyiDict: %s" % str(yuyiDict))
+                                bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
 
-                            if left == "车票查询":  # 车票查询，续上目的地
-                                portraitDict["sentences"] = sentences + "|" + railway_dest  # 询问问题+目的地
-                            else:
-                                portraitDict["sentences"] = sentences  # 询问问题
-                            portraitDict["intention"] = left  # 意图
-                            portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
-                            portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                                           routing_key=portrait_routingKey,
-                                                           body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            print("portraitDict: %s" % str(portraitDict))
-                            bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                                # 人物画像端
+                                portraitDict = {}  # 人物画像要填的字段
+                                portraitDict["source"] = "yuyi"  # 标识来源是语义yuyi端还是backstage后端
+                                portraitDict["timestamp"] = timestamp
+                                portraitDict["daotaiID"] = daotaiID
+                                portraitDict["portrait"] = None  # 画像部分留空
+                                portraitDict["savefile"] = ""  # 图片保存路径
+
+                                if left == "车票查询":  # 车票查询，续上目的地
+                                    portraitDict["sentences"] = sentences + "|" + railway_dest  # 询问问题+目的地
+                                else:
+                                    portraitDict["sentences"] = sentences  # 询问问题
+                                portraitDict["intention"] = left  # 意图
+                                portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
+                                portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                                                               routing_key=portrait_routingKey,
+                                                               body=str(portraitDict))  # 将语义结果发送到用户画像端
+                                print("portraitDict: %s" % str(portraitDict))
+                                bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                     else:
                         print("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
                         bayes_mq_log.logger.info(("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp))))
