@@ -231,13 +231,12 @@ def test_bayes(model_file):
                                 #     left = "坐高铁"
                                 # answer = getAnswer(left)
                                 # thread.start_new_thread(send_msg, ())    # 新开一个线程，通知前端
-                                print(left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
-                                bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                                 yuyiDict = {}
                                 yuyiDict["daotaiID"] = daotaiID
 
-                                if left == "车票查询":  # 车票查询续上目的地
+                                if left == "车票查询" or str(sentences.strip()).__contains__("车票查询"):  # 车票查询续上目的地
+                                    left = "车票查询"
                                     if len(railway_dest) > 0:
                                         yuyiDict["sentences"] = sentences + "|" + railway_dest[0]
                                     else:
@@ -246,6 +245,9 @@ def test_bayes(model_file):
                                     yuyiDict["sentences"] = sentences
                                 yuyiDict["timestamp"] = timestamp
                                 yuyiDict["intention"] = "听得懂|" + left  # 意图
+
+                                print(left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                                bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                                 # 之后将yuyiDict写入到消息队列
                                 backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
@@ -357,7 +359,7 @@ def test_bayes(model_file):
 
 def main():
     # print(get_newest_model(bernousNB_save_path))
-    newest_model = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1576632950_9512195121951219_0_0.m"     # 这里写模型文件的绝对路径
+    newest_model = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1600674288_9873150105708245_0_None.m"     # 这里写模型文件的绝对路径
     test_bayes(newest_model)
 
     # model_file = "D:/workspace/Pycharm_Projects/develop-python-case/NLP/textCategory/bayes/model/bernousNB/bernousNB_1576579523_9512195121951219_0_0.m"
