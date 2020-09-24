@@ -6,7 +6,7 @@ import socket
 '''
 
 p = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-p.connect(('127.0.0.1', 50007))
+p.connect(('127.0.0.1', 9999))
 while True:
     msg = input('please input:')
     # 防止输入空消息

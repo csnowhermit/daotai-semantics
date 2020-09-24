@@ -185,6 +185,8 @@ def test_bayes(model_file):
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                elif msgCalled == "onCloseConn":    # 客户端断开连接
+                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onResult":  # 只解析正常获取的识别结果
                     word_list = []
                     new_sentences, railway_dest, shinei_area = get_words(sentences)  # 关键词列表，火车目的地列表，市内目的地列表
