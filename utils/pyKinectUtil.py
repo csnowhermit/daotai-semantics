@@ -299,6 +299,27 @@ class Kinect(object):
 
         return self.color, self.color_draw, self.depth, self.depth_draw, self.infrared
 
+    """读取最新你的彩色图像"""
+    def get_the_data_of_color(self):
+        # 访问新的RGB帧
+        if self._kinect.has_new_color_frame():
+            # 获得的图像数据是二维的，需要转换为需要的格式
+            frame = self._kinect.get_last_color_frame()
+            # 返回的是4通道，还有一通道是没有注册的
+            gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
+            # 取出彩色图像数据
+            # self.color = gbra[:, :, 0:3]
+            self.color = gbra[:, :, 0:3][:, ::-1, :]
+
+            # 这是因为在python中直接复制该图像的效率不如直接再从C++中获取一帧来的快
+            frame = self._kinect.get_last_color_frame()
+            # 返回的是4通道，还有一通道是没有注册的
+            gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
+            # 取出彩色图像数据
+            # self.color_draw = gbra[:, :, 0:3][:,::-1,:]
+            self.color_draw = gbra[:, :, 0:3][:, ::-1, :]
+        return self.color, self.color_draw
+
     """显示各种图像的视频流"""
 
     def Kinect_imshow(self, type_im='rgb'):

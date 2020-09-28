@@ -31,7 +31,8 @@ def Receive():
 
     kinect = Kinect()
     while True:
-        color_data = kinect.get_the_data_of_color_depth_infrared_image()  # 获得最新的彩色和深度图像以及红外图像
+        # color_data = kinect.get_the_data_of_color_depth_infrared_image()  # 获得最新的彩色和深度图像以及红外图像
+        color_data = kinect.get_the_data_of_color()    # 只获取最新的色彩图
         if color_data[0] is not None:
             lock.acquire()
             frame_buffer.push(color_data[0])

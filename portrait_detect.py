@@ -102,7 +102,8 @@ def captureImageFromKinect(kinect):
     portrait_log.logger.info("face_detect: %s" % (face_detect))
 
     while True:
-        color_data = kinect.get_the_data_of_color_depth_infrared_image()  # 获得最新的彩色和深度图像以及红外图像
+        # color_data = kinect.get_the_data_of_color_depth_infrared_image()  # 获得最新的彩色和深度图像以及红外图像
+        color_data = kinect.get_the_data_of_color()    # 只获取最新的色彩图
         frame = color_data[0]
         if frame is not None:
             # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (480, 640, 3)，（高，宽，通道）
