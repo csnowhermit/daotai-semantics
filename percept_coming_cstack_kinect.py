@@ -8,7 +8,7 @@ from PIL import Image
 
 import face_recognition
 from config import *
-from utils.commonutil import getFormatTime, crop_face
+from utils.commonutil import getFormatTime, crop_face, is_effective
 import configparser
 import pika
 from utils.CapUtil import Stack
@@ -122,7 +122,7 @@ def percept():
                 max_face_box = bboxes[box_areas.index(max_face_area)]    # 最大人脸面积框对应的坐标
                 print("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
                 portrait_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
-                if max_face_area > face_area_threshold:
+                if max_face_area > face_area_threshold and is_effective(max_face_box, height, width):    # 判断人脸框面积大于阀值 and 在有效识别区内
                     # print("mtcnn-bboxes--> ", bboxes)
                     # print("mtcnn-landmarks--> ", landmarks)
                     # 这里新增来人的性别年龄识别

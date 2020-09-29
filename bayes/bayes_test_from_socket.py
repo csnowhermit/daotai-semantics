@@ -164,7 +164,7 @@ def test_bayes(model_file):
                 if msgCalled == "onBeginOfSpeech":
                     yuyiDict = {}
                     yuyiDict["daotaiID"] = daotaiID
-                    yuyiDict["sentences"] = sentences
+                    yuyiDict["sentences"] = sentences    # “TAG+开始听写”是在onBeginOfSpeech()里面回调的；只有“开始听写”是在startListening()里面调的
                     yuyiDict["timestamp"] = timestamp
                     yuyiDict["intention"] = "onBeginOfSpeech"  # 开始听写
 

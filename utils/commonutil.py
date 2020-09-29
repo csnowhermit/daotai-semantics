@@ -140,3 +140,32 @@ def resolving_recv(recvStr):
         except Exception as e:
             traceback.print_exc()
     return recvJsonArr
+
+
+'''
+    判断人物框是否在有效区间内
+    :param box 人脸框：左上宽高
+    :param height 完整图像的高
+    :param width 完整图像的宽
+    :return True，在有效区间内；False，不在有效区间内
+'''
+def is_effective(box, height, width):
+    top, left, bottom, right = box    # 原始结果为：上左下右
+    w = right - left
+    h = bottom - top
+    centerx = left + w / 2
+    centery = top + h / 2
+
+    effective_center = (width/2, height/2)    # 全图中心点
+    effective_width = width * effective_area_rate[0]    # 有效区域宽度
+    effective_height = height * effective_area_rate[1]    # 有效区域高度
+
+    effective_left = int(effective_center[0] - width / 2)    # 有效区域：左
+    effective_top = int(effective_center[1] - height / 2)    # 有效区域：上
+    effective_right = int(effective_center[0] + width / 2)    # 有效区域：右
+    effective_bottom = int(effective_center[1] + height / 2)    # 有效区域：下
+
+    if (centerx >= effective_left and centerx <= effective_right) and (centery >= effective_top and centery <= effective_bottom):
+        return True
+    else:
+        return False
