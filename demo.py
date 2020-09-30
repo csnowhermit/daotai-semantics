@@ -1,7 +1,7 @@
 import time
 import datetime
 from PIL import Image
-from utils.commonutil import getFormatTime
+from utils.commonutil import getFormatTime, is_effective
 import json
 import cv2
 
@@ -35,3 +35,6 @@ print(heartbeatDict)
 
 print(time.time() * 1000)
 print(int(time.time() * 1000))
+
+box = [150, 200, 260, 450]
+print(is_effective(box, 1080, 1920))
