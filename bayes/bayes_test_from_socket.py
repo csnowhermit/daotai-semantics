@@ -11,6 +11,7 @@ import traceback
 import itertools
 import pika
 from sklearn.externals import joblib
+from utils.dbUtil import saveUsed2DB
 
 base_path = "D:/workspace/workspace_python/daotai-semantics"
 sys.path.append(base_path)
@@ -112,7 +113,7 @@ def test_bayes(model_file):
 
     sev = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP连接
     HOST, PORT = getSocketConfig()
-    sev.bind((HOST, PORT))    # 192.168.120.133是连安卓时用
+    sev.bind((HOST, PORT))
     sev.listen()
     semantics_log.logger.info("语义识别端已启动。。。")
     print("语义识别端已启动。。。")
@@ -154,7 +155,7 @@ def test_bayes(model_file):
             #     portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
-                print("recvJson: %s" % recvJson)
+                # print("recvJson: %s" % recvJson)
                 semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
                 daotaiID = recvJson["daotaiID"]
                 sentences = recvJson["sentences"]    # 现在安卓端、语义端、后端都用sentences字段
@@ -192,10 +193,18 @@ def test_bayes(model_file):
                     yuyiDict["timestamp"] = timestamp
                     yuyiDict["intention"] = "onError"    # 报错的信息
 
-                    # 之后将yuyiDict写入到消息队列
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    # 离在线的切换放在语义端进行
+                    errorArr = str(sentences).split(" ")
+                    if errorArr[0] == "onlineIAT":    # 在线版
+                        if errorArr[1] == "11201":    # 说明在线版额度用完了，需要切离线版了
+                            # 此处写数据库，指令接收端从库中查询是用在线版还是离线版
+                            saveUsed2DB(str(getFormatTime(timestamp)), errorArr[0], 1)
+
+
+                    # # 之后将yuyiDict写入到消息队列（给后端的）
+                    # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                    #                                 routing_key=backstage_routingKey,
+                    #                                 body=str(yuyiDict))  # 将语义识别结果给到后端
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onCloseConn":    # 客户端断开连接
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
