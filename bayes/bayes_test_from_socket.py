@@ -154,7 +154,7 @@ def test_bayes(model_file):
             #     portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
-                # print("recvJson: %s" % recvJson)
+                print("recvJson: %s" % recvJson)
                 semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
                 daotaiID = recvJson["daotaiID"]
                 sentences = recvJson["sentences"]    # 现在安卓端、语义端、后端都用sentences字段
@@ -179,6 +179,18 @@ def test_bayes(model_file):
                     yuyiDict["sentences"] = sentences
                     yuyiDict["timestamp"] = timestamp
                     yuyiDict["intention"] = "onEndOfSpeech"  # 停止听写
+
+                    # 之后将yuyiDict写入到消息队列
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                elif msgCalled == "onError":
+                    yuyiDict = {}
+                    yuyiDict["daotaiID"] = daotaiID
+                    yuyiDict["sentences"] = sentences    # TAG+errorCode
+                    yuyiDict["timestamp"] = timestamp
+                    yuyiDict["intention"] = "onError"    # 报错的信息
 
                     # 之后将yuyiDict写入到消息队列
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
