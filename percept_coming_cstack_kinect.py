@@ -16,6 +16,7 @@ import threading
 from keras.utils.data_utils import get_file
 from wide_resnet import WideResNet
 
+
 '''
     来人感知模块
     Note：获取Kinect画面
@@ -41,6 +42,9 @@ def Receive():
 def percept():
     nodeName = "rabbit2backstage"  # 读取该节点的数据
 
+    comming_logfile = 'D:/data/daotai_comming.log'
+    comming_log = Logger(comming_logfile, level='info')
+
     comming_mq_logfile = 'D:/data/daotai_comming_mq.log'
     comming_mq_log = Logger(comming_mq_logfile, level='info')
 
@@ -60,16 +64,12 @@ def percept():
     connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
     backstage_channel = connection.channel()
 
-    # # 创建socket，将来人感知的消息发送到安卓语音识别端
-    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # client.connect(('192.168.0.144', 50007))
-
     # 人脸检测
     global face_detect    # 子线程里加载模型，需要将模型指定成全局变量
     face_detect = face_recognition.FaceDetection()  # 初始化mtcnn
 
     print("face_detect:", face_detect)
-    portrait_log.logger.info("face_detect: %s" % (face_detect))
+    comming_log.logger.info("face_detect: %s" % (face_detect))
 
     # 性别年龄识别模型
     WRN_WEIGHTS_PATH = "https://github.com/Tony607/Keras_age_gender/releases/download/V1.0/weights.18-4.06.hdf5"
@@ -108,7 +108,7 @@ def percept():
                 pass
             else:
                 print("faces.faceNum:", len(bboxes))
-                portrait_log.logger.info("faces.faceNum: %s" % (len(bboxes)))
+                comming_log.logger.info("faces.faceNum: %s" % (len(bboxes)))
                 box_areas = []
                 for i in range(0, len(bboxes)):
                     box = bboxes[i]
@@ -121,7 +121,7 @@ def percept():
                 max_face_area = max(box_areas)    # 最大的人脸面积
                 max_face_box = bboxes[box_areas.index(max_face_area)]    # 最大人脸面积框对应的坐标
                 print("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
-                portrait_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
+                comming_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
                 if max_face_area > face_area_threshold and is_effective(max_face_box, height, width):    # 判断人脸框面积大于阀值 and 在有效识别区内
                     # print("mtcnn-bboxes--> ", bboxes)
                     # print("mtcnn-landmarks--> ", landmarks)
@@ -157,7 +157,7 @@ def percept():
                     # client.send(str(commingDict).encode('utf-8'))  # 收发消息一定要二进制，记得编码
 
                     print("commingDict: %s" % (commingDict))
-                    portrait_log.logger.info("commingDict: %s" % (commingDict))
+                    comming_log.logger.info("commingDict: %s" % (commingDict))
                     try:
                         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                         routing_key=backstage_routingKey,

@@ -9,10 +9,6 @@ import cv2
 # 导台ID
 daotaiID = "center01"
 
-# 日志文件
-portrait_logfile = 'D:/data/portrait.log'
-portrait_log = Logger(portrait_logfile, level='info')
-
 # 随身物品
 personal_luggage_list = ['bicycle', 'backpack',  'umbrella',
                          'handbag','tie', 'suitcase', 'skis', 'snowboard',
