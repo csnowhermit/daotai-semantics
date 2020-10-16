@@ -21,7 +21,7 @@ from wide_resnet import WideResNet
     来人感知模块
     Note：获取Kinect画面
     Note：自定义Stack(stack_szie)，解决消费速度跟不上生成速度的情况；
-    Note：percept_coming.py中也可解决，但在webcam中会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
+    Note：图像帧积压过多会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
 '''
 
 frame_buffer = Stack(30 * 5)
@@ -42,11 +42,8 @@ def Receive():
 def percept():
     nodeName = "rabbit2backstage"  # 读取该节点的数据
 
-    comming_logfile = 'D:/data/daotai_comming.log'
-    comming_log = Logger(comming_logfile, level='info')
-
-    comming_mq_logfile = 'D:/data/daotai_comming_mq.log'
-    comming_mq_log = Logger(comming_mq_logfile, level='info')
+    comming_log = Logger('D:/data/daotai_comming.log', level='info')
+    comming_mq_log = Logger('D:/data/daotai_comming_mq.log', level='info')
 
     cf = configparser.ConfigParser()
     cf.read("./kdata/config.conf")

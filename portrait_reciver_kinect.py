@@ -14,7 +14,6 @@ from config import *
 from mymodel import *
 from utils.commonutil import getFormatTime
 from utils.pyKinectUtil import Kinect
-# from portrait_detect import captureImageFromKinect, detect_portrait
 
 '''
     portrait端，作为rabbitmq消费端口，接收语义端和后端的消息，进行人物画像识别，并入库
@@ -22,8 +21,7 @@ from utils.pyKinectUtil import Kinect
 '''
 
 # 日志文件
-portrait_logfile = 'D:/data/daotai_portrait.log'
-portrait_log = Logger(portrait_logfile, level='info')
+portrait_log = Logger('D:/data/daotai_portrait.log', level='info')
 
 kinect = Kinect()
 

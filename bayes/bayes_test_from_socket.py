@@ -142,18 +142,6 @@ def test_bayes(model_file):
             recvJsonArr = resolving_recv(recvStr)    # 同时解析多个传来的json
             # print("============", len(recvJsonArr))
 
-            # if backstage_connection.is_open is True and backstage_channel.is_open is True:
-            #     print("backstage is opened")
-            #     pass
-            # else:
-            #     backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-            #
-            # if portrait_connection.is_open is True and portrait_channel.is_open is True:
-            #     print("portrait is opened")
-            #     pass
-            # else:
-            #     portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
-
             for recvJson in recvJsonArr:    # 逐个处理每个json
                 # print("recvJson: %s" % recvJson)
                 semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
@@ -378,15 +366,11 @@ def test_bayes(model_file):
             continue
 
 
-
-
 def main():
     # print(get_newest_model(bernousNB_save_path))
     newest_model = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1600674288_9873150105708245_0_None.m"     # 这里写模型文件的绝对路径
     test_bayes(newest_model)
 
-    # model_file = "D:/workspace/Pycharm_Projects/develop-python-case/NLP/textCategory/bayes/model/bernousNB/bernousNB_1576579523_9512195121951219_0_0.m"
-    # test_bayes(model_file)
 
 if __name__ == '__main__':
     main()

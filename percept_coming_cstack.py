@@ -18,7 +18,7 @@ from wide_resnet import WideResNet
 '''
     来人感知模块
     Note：自定义Stack(stack_szie)，解决消费速度跟不上生成速度的情况；
-    Note：percept_coming.py中也可解决，但在webcam中会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
+    Note：图像帧积压过多会报错：[h264 @ 0000000000498f40] error while decoding MB 8 21, bytestream -13
 '''
 
 frame_buffer = Stack(30 * 5)
@@ -41,11 +41,8 @@ def Receive():
 def percept():
     nodeName = "rabbit2backstage"  # 读取该节点的数据
 
-    comming_logfile = 'D:/data/daotai_comming.log'
-    comming_log = Logger(comming_logfile, level='info')
-
-    comming_mq_logfile = 'D:/data/daotai_comming_mq.log'
-    comming_mq_log = Logger(comming_mq_logfile, level='info')
+    comming_log = Logger('D:/data/daotai_comming.log', level='info')
+    comming_mq_log = Logger('D:/data/daotai_comming_mq.log', level='info')
 
     cf = configparser.ConfigParser()
     cf.read("./kdata/config.conf")
@@ -81,7 +78,7 @@ def percept():
     age_gender_model.load_weights(fpath)
 
     while True:
-        if int(time.time()) % 10 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题：因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
+        if int(time.time() * 1000) % 500 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题：因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
             heartbeatDict = {}
             heartbeatDict["daotaiID"] = daotaiID
             heartbeatDict["sentences"] = ""
@@ -151,9 +148,6 @@ def percept():
                     commingDict["sentences"] = "%s,%s,%s,%s,%s,%s,%s,%s,%s" % (gender, str(age), str(left), str(top), str(right), str(bottom), str(face_area_threshold), str(height), str(width))    # sentences字段填性别、年龄、位置（左上右下），逗号隔开
                     commingDict["timestamp"] = str(int(time.time() * 1000))
                     commingDict["intention"] = "mycoming"  # 表示有人来了
-
-                    # # 将来人消息发送到语音端
-                    # client.send(str(commingDict).encode('utf-8'))  # 收发消息一定要二进制，记得编码
 
                     print("commingDict: %s" % (commingDict))
                     comming_log.logger.info("commingDict: %s" % (commingDict))
