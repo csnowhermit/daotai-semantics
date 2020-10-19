@@ -9,6 +9,7 @@ from PIL import Image
 import face_recognition
 from config import *
 from utils.commonutil import getFormatTime, crop_face, is_effective
+from utils.dbUtil import saveMyComing2DB
 import configparser
 import pika
 from utils.CapUtil import Stack
@@ -69,14 +70,9 @@ def percept():
     comming_log.logger.info("face_detect: %s" % (face_detect))
 
     # 性别年龄识别模型
-    WRN_WEIGHTS_PATH = "https://github.com/Tony607/Keras_age_gender/releases/download/V1.0/weights.18-4.06.hdf5"
     global age_gender_model
     age_gender_model = WideResNet(face_size, depth=16, k=8)()
-    age_gender_model_dir = os.path.join(os.getcwd(), "model_data").replace("//", "\\")
-    fpath = get_file('weights.18-4.06.hdf5',
-                     WRN_WEIGHTS_PATH,
-                     cache_subdir=age_gender_model_dir)
-    age_gender_model.load_weights(fpath)
+    age_gender_model.load_weights("./model_data/weights.18-4.06.hdf5")
 
     while True:
         if int(time.time() * 1000) % 500 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题，因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
@@ -150,9 +146,6 @@ def percept():
                     commingDict["timestamp"] = str(int(time.time() * 1000))
                     commingDict["intention"] = "mycoming"  # 表示有人来了
 
-                    # # 将来人消息发送到语音端
-                    # client.send(str(commingDict).encode('utf-8'))  # 收发消息一定要二进制，记得编码
-
                     print("commingDict: %s" % (commingDict))
                     comming_log.logger.info("commingDict: %s" % (commingDict))
                     try:
@@ -168,9 +161,9 @@ def percept():
                         connection.process_data_events()  # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
                         backstage_channel = connection.channel()
 
-                        comming_mq_log.logger.info("rabbit2portrait producer 已重连：%s %s %s %s" % (
+                        comming_mq_log.logger.info("rabbit2backstage producer 已重连：%s %s %s %s" % (
                             connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-                        print("rabbit2portrait producer 已重连：%s %s %s %s" % (
+                        print("rabbit2backstage producer 已重连：%s %s %s %s" % (
                             connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
 
                         # 重连后再发一次
@@ -179,7 +172,7 @@ def percept():
                                                         body=str(commingDict))  # 将语义识别结果给到后端
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
                     comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
-                    # time.sleep(3)  # 识别到有人来了，等人问完问题再进行识别
+                    saveMyComing2DB(commingDict)
 
             if height != 480 or width != 640:
                 frame = cv2.resize(frame, (640, 480))    # resize时的顺序为：宽，高

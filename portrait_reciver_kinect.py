@@ -14,6 +14,8 @@ from config import *
 from mymodel import *
 from utils.commonutil import getFormatTime
 from utils.pyKinectUtil import Kinect
+from utils.dateUtil import formatTimestamp
+from utils.dbUtil import savePortrait2DB
 
 '''
     portrait端，作为rabbitmq消费端口，接收语义端和后端的消息，进行人物画像识别，并入库
@@ -189,9 +191,6 @@ def getRabbitConn(nodeName):
 
 # 定义一个回调函数来处理，这边的回调函数就是将信息打印出来。
 def callback(ch, method, properties, body):
-    print("++++++++++ start a portrait detect ++++++++++ %s" % (getFormatTime(str(int(time.time())))))
-    portrait_log.logger.info("++++++++++ start a portrait detect ++++++++++ %s" % (getFormatTime(str(int(time.time())))))
-    print(" [x] Received %r" % body)
     portrait_log.logger.info(" [x] Received %r" % body)
     try:
         recvStr = str(body, encoding="utf-8")
@@ -200,6 +199,10 @@ def callback(ch, method, properties, body):
         # portrait_log.logger.info(recvJson)
 
         recvDict = eval(recvStr)    # str转dict
+        if recvDict["intention"] == "heartbeat":    # 忽略掉心跳包
+            # print(recvDict)
+            return
+        portrait_log.logger.info("++++++++++ start a portrait detect ++++++++++ %s" % (getFormatTime(str(int(time.time())))))
         source = recvDict["source"]
         daotaiID = recvDict["daotaiID"]
         timestamp = recvDict["timestamp"]
@@ -223,7 +226,7 @@ def callback(ch, method, properties, body):
         # 拼接最后的json
         portraitDict = {}
         portraitDict["source"] = source  # 标识来源是语义yuyi端还是backstage后端
-        portraitDict["timestamp"] = timestamp
+        portraitDict["currTime"] = formatTimestamp(float(timestamp/1000), format="%Y-%m-%d_%H:%M:%S", ms=True)
         portraitDict["daotaiID"] = daotaiID
         portraitDict["portrait"] = featureDict  # 行李、性别、年龄、表情
         portraitDict["savefile"] = savefile  # 图片保存路径
@@ -232,7 +235,8 @@ def callback(ch, method, properties, body):
         portraitDict["intentionLevel"] = recvDict["intentionLevel"]    # 意图级别
 
         print("complete-portrait: %s" % (portraitDict))
-        portrait_log.logger.info("complete-portrait: %s" % (portraitDict))  # 写日志也行，入库也行
+        portrait_log.logger.info("complete-portrait: %s" % (portraitDict))
+        savePortrait2DB(portraitDict)
     except Exception as e:
         portrait_log.logger.error(traceback.format_exc())
     print("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))

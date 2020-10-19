@@ -24,3 +24,5 @@ if __name__ == '__main__':
     print(formatTimestamp(time.time()))
     print(formatTimestamp(time.time(), format="%Y-%m-%d_%H:%M"))
     print(formatTimestamp(time.time(), format="%Y-%m-%d_%H:%M:%S", ms=True))
+    print(type(time.time()), time.time())
+    print(formatTimestamp(float(1603090556970/1000), format="%Y-%m-%d_%H:%M:%S", ms=True))

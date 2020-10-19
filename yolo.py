@@ -18,7 +18,6 @@ from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 from keras.utils import multi_gpu_model
-from config import *
 from utils.commonutil import *
 from utils.inference import apply_offsets
 from utils.preprocessor import preprocess_input
@@ -85,7 +84,6 @@ class YOLO(object):
                 'Mismatch between model and given anchor and class sizes'
 
         print('{} model, anchors, and classes loaded.'.format(model_path))
-        portrait_log.logger.info('{} model, anchors, and classes loaded.'.format(model_path))
 
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2, ))
@@ -154,7 +152,6 @@ class YOLO(object):
                 result = sorted(askPersonList, key=lambda x: x[1], reverse=True)  # reverse=True表示降序
                 asker = result[0]  # 提问人
                 print("asker:", asker)
-                portrait_log.logger.info("asker: %s" % str(asker))
 
                 x0, x1, x2 = asker  # 三者分别是：人物框，人体框面积，人脸框
                 person_top, person_left, person_bottom, person_right = x0  # 上左下右
@@ -223,13 +220,11 @@ class YOLO(object):
                 # ====================
 
                 print("portraitDict: ", featureDict)
-                portrait_log.logger.info("portraitDict: %s" % (featureDict))
         except Exception as e:
-            portrait_log.logger.error(traceback.format_exc())
+            traceback.print_exc()
 
         end = timer()
         print(end - start)
-        portrait_log.logger.info("%s" % (end - start))
         return image, featureDict
 
     def close_session(self):

@@ -8,6 +8,7 @@ import random
 import socket
 import configparser
 import traceback
+import threading
 import itertools
 import pika
 from sklearn.externals import joblib
@@ -17,6 +18,8 @@ base_path = "D:/workspace/workspace_python/daotai-semantics"
 sys.path.append(base_path)
 from bayes.bayes_train import get_words, bernousNB_save_path, isChat
 from utils.commonutil import getFormatTime, resolving_recv
+from utils.dbUtil import saveYuyi2DB
+from config import daotaiID
 
 sys.path.append("..")
 from Logger import *
@@ -61,7 +64,7 @@ def get_newest_model(model_path):
         semantics_log.logger.info(("Use Model: %s" % (os.path.join(model_full_path, filelist[0]))))
         return os.path.join(model_full_path, filelist[0])
     else:
-        semantics_log.logger("Model path is not exists")
+        semantics_log.logger.info("Model path is not exists")
 
 '''
     读取配置文件，获取打开SocketServer的ip和端口
@@ -97,28 +100,47 @@ def getRabbitConn(nodeName):
 
     return connection, channel, EXCHANGE_NAME, routingKey
 
+backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
+semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+print("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+
+portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
+semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
+print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
+
+
+# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+def portrait_heartbeat():
+    heartbeatDict = {}
+    heartbeatDict["daotaiID"] = daotaiID
+    heartbeatDict["sentences"] = ""
+    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+    heartbeatDict["intention"] = "heartbeat"  # 心跳
+
+    portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                                   routing_key=portrait_routingKey,
+                                   body=str(heartbeatDict))
+    # print("heartbeatDict:", heartbeatDict)
+    global timer
+    timer = threading.Timer(3, portrait_heartbeat)
+    timer.start()
+
+
 '''
     测试多项式分类器
 '''
 def test_bayes(model_file):
     clf = joblib.load(model_file)
     # loadAnswers()    # 加载 意图-答案 表
-    backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-    semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-    print("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-
-    portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
-    semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
-    print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
 
     sev = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # TCP连接
     HOST, PORT = getSocketConfig()
     sev.bind((HOST, PORT))
     sev.listen()
-    semantics_log.logger.info("语义识别端已启动。。。")
-    print("语义识别端已启动。。。")
+    semantics_log.logger.info("bayes semantics 已启动。。。")
+    print("bayes semantics 已启动。。。")
 
-    conn, addr = sev.accept()
+    conn, addr = sev.accept()    # 这儿会阻塞，等待连接
     semantics_log.logger.info("%s %s" % (conn, addr))
     print(conn, addr)
     semantics_log.logger.info((conn, addr))
@@ -188,19 +210,18 @@ def test_bayes(model_file):
                             # 此处写数据库，指令接收端从库中查询是用在线版还是离线版
                             saveUsed2DB(str(getFormatTime(timestamp)), errorArr[0], 1)
 
-
-                    # # 之后将yuyiDict写入到消息队列（给后端的）
-                    # backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                    #                                 routing_key=backstage_routingKey,
-                    #                                 body=str(yuyiDict))  # 将语义识别结果给到后端
+                    # 之后将yuyiDict写入到消息队列（给后端的）
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(yuyiDict))    # 将报错信息给到后端
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onCloseConn":    # 客户端断开连接
                     print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
-                elif msgCalled == "onResult":  # 只解析正常获取的识别结果
+                elif msgCalled == "onResult":  # 正常获取的识别结果
                     word_list = []
                     new_sentences, railway_dest, shinei_area = get_words(sentences)  # 关键词列表，火车目的地列表，市内目的地列表
                     bayes_mq_log.logger.info(
-                        "------------------ start %s ------------------" % str(getFormatTime(int(time.time()))))
+                        "------------------ onResult start %s ------------------" % str(getFormatTime(int(time.time()))))
                     if isChat(new_sentences) is False:  # 如果不是咨询类
                         if len(shinei_area) > 0:
                             print("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp)))
@@ -218,6 +239,7 @@ def test_bayes(model_file):
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
                             # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))  # 单独写个日志
+                            saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
                             portraitDict = {}  # 人物画像要填的字段
@@ -266,6 +288,7 @@ def test_bayes(model_file):
                                                                 body=str(yuyiDict))  # 将语义识别结果给到后端
                                 # print("yuyiDict: %s" % str(yuyiDict))
                                 bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                                saveYuyi2DB(yuyiDict)
 
                                 # 人物画像端
                                 portraitDict = {}  # 人物画像要填的字段
@@ -303,6 +326,7 @@ def test_bayes(model_file):
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
                             # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                            saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
                             portraitDict = {}  # 人物画像要填的字段
@@ -332,6 +356,7 @@ def test_bayes(model_file):
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
                             # print("yuyiDict: %s" % str(yuyiDict))
                             bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                            saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
                             portraitDict = {}  # 人物画像要填的字段
@@ -348,14 +373,13 @@ def test_bayes(model_file):
                                                            body=str(portraitDict))  # 将语义结果发送到用户画像端
                             # print("portraitDict: %s" % str(portraitDict))
                             bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
-
                     bayes_mq_log.logger.info(
-                        "++++++++++++++++++ end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
+                        "++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
                 else:  # 其他情况的处理
                     pass
         except ConnectionResetError as connectionResetError:
-            semantics_log.logger.warn("客户端已断开，正在等待重连: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
-            print("客户端已断开，正在等待重连: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+            semantics_log.logger.warn("waiting connect: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
+            print("waiting connect: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
             conn, addr = sev.accept()
             semantics_log.logger.info("%s %s" % (conn, addr))
             print(conn, addr)
@@ -373,4 +397,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    heartbeat = threading.Timer(3, portrait_heartbeat)
+    heartbeat.start()
+
+    main = threading.Thread(target=main)
+    main.start()

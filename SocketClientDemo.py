@@ -6,12 +6,12 @@ import socket
 '''
 
 p = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-p.connect(('127.0.0.1', 9999))
+p.connect(('192.168.0.27', 50007))
 while True:
     msg = input('please input:')
     # 防止输入空消息
-    if not msg:
-        continue
+    # if not msg:
+    #     continue
 
     msgDict = {}
     msgDict["daotaiID"] = "center01"

@@ -3,6 +3,7 @@ import socket
 import time
 import traceback
 from utils.dbUtil import getCurrDateStatus
+from utils.dateUtil import formatTimestamp
 
 sys.path.append("..")
 from Logger import *
@@ -36,8 +37,8 @@ def start():
                 empty_package_nums = 0    # 如果遇到非空包来，则空包数量重新计数
 
             status = getCurrDateStatus()
-            print("指令：%s, 引擎：%s" % (recvStr, status))
-            iatcommand_log.logger.info("指令：%s, 引擎：%s" % (recvStr, status))
+            print("时间：%s，指令：%s, 引擎：%s" % (formatTimestamp(time.time(), format="%Y-%m-%d_%H:%M:%S", ms=True), recvStr, status))
+            iatcommand_log.logger.info("时间：%s，指令：%s, 引擎：%s" % (formatTimestamp(time.time(), format="%Y-%m-%d_%H:%M:%S", ms=True), recvStr, status))
             if status == 0:    # 为0，说明能用在线版
                 p = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 p.connect(("192.168.0.27", 50008))
@@ -51,10 +52,9 @@ def start():
 
                 p.send(str(recvStr).encode('utf-8'))  # 收发消息一定要二进制，记得编码
                 p.close()
-
         except ConnectionResetError as connectionResetError:
-            iatcommand_log.logger.warn("客户端已断开，正在等待重连: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
-            print("客户端已断开，正在等待重连: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+            iatcommand_log.logger.warn("waiting connect: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
+            print("waiting connect: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
             conn, addr = sev.accept()
             print(conn, addr)
             iatcommand_log.logger.info("%s %s" % (conn, addr))
