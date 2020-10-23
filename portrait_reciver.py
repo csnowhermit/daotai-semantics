@@ -237,18 +237,26 @@ def callback(ch, method, properties, body):
     print("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))
     portrait_log.logger.info("========== end a portrait detect ========== %s" % (getFormatTime(str(int(time.time())))))
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
     FLAGS = parser.parse_args()
+    global yolo
     yolo = YOLO(**vars(FLAGS))
 
     consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey = getRabbitConn("rabbit2portrait")
-    portrait_log.logger.info("rabbit consumer2portrait 已启动：%s %s %s %s" % (consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
-    print("rabbit consumer2portrait 已启动：%s %s %s %s" % (consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
+    portrait_log.logger.info("rabbit consumer2portrait 已启动：%s %s %s %s" % (
+    consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
+    print("rabbit consumer2portrait 已启动：%s %s %s %s" % (
+    consumer_channel, consumer_EXCHANGE_NAME, consumer_queueName, consumer_routingKey))
 
-    consumer_channel.basic_consume(queue=consumer_queueName, on_message_callback=callback, auto_ack=True)    # 这里写的是QUEUE_NAME，而不是routingKey
+    consumer_channel.basic_consume(queue=consumer_queueName, on_message_callback=callback,
+                                   auto_ack=True)  # 这里写的是QUEUE_NAME，而不是routingKey
 
     print(' [*] Waiting for messages. To exit press CTRL+C')
 
     # 开始接收信息，并进入阻塞状态，队列里有信息才会调用callback进行处理。按ctrl+c退出。
     consumer_channel.start_consuming()
+
+
+if __name__ == '__main__':
+    main()

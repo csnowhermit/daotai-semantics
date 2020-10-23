@@ -12,13 +12,12 @@ import threading
 import itertools
 import pika
 from sklearn.externals import joblib
-from utils.dbUtil import saveUsed2DB
 
 base_path = "D:/workspace/workspace_python/daotai-semantics"
 sys.path.append(base_path)
 from bayes.bayes_train import get_words, bernousNB_save_path, isChat
 from utils.commonutil import getFormatTime, resolving_recv
-from utils.dbUtil import saveYuyi2DB
+from utils.dbUtil import saveYuyi2DB, saveUsed2DB
 from config import daotaiID
 
 sys.path.append("..")
@@ -129,7 +128,8 @@ def portrait_heartbeat():
 '''
     测试多项式分类器
 '''
-def test_bayes(model_file):
+def test_bayes():
+    model_file = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1600674288_9873150105708245_0_None.m"  # 这里写模型文件的绝对路径
     clf = joblib.load(model_file)
     # loadAnswers()    # 加载 意图-答案 表
 
@@ -391,14 +391,12 @@ def test_bayes(model_file):
 
 
 def main():
-    # print(get_newest_model(bernousNB_save_path))
-    newest_model = "D:/workspace/workspace_python/daotai-semantics/bayes/model/bernousNB/bernousNB_1600674288_9873150105708245_0_None.m"     # 这里写模型文件的绝对路径
-    test_bayes(newest_model)
-
-
-if __name__ == '__main__':
     heartbeat = threading.Timer(3, portrait_heartbeat)
     heartbeat.start()
 
-    main = threading.Thread(target=main)
-    main.start()
+    bayes = threading.Thread(target=test_bayes)
+    bayes.start()
+
+
+if __name__ == '__main__':
+    main()

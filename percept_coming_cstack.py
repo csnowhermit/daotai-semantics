@@ -176,9 +176,12 @@ def percept():
             cv2.imshow("frame", frame)
             cv2.waitKey(1)
 
-if __name__ == '__main__':
+def main():
     p1 = threading.Thread(target=Receive)
     p2 = threading.Thread(target=percept)
     p1.start()
     time.sleep(5)
     p2.start()
+
+if __name__ == '__main__':
+    main()
