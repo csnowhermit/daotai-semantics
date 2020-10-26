@@ -120,7 +120,7 @@ def getCurrDateStatus():
     cursor = conn.cursor()
 
     now = datetime.datetime.now().strftime('%Y%m%d')
-    sql = "select count(1) from iat_engine_record where curr_time like '%s%%'" % (now)    # 找正常表中最大值
+    sql = "select count(1) from iat_engine_record where curr_time like '%s%%'" % (now)
     # print("sql:", sql)
     cursor.execute(sql)
     results = cursor.fetchall()    # results[0], <class 'tuple'>
