@@ -42,8 +42,8 @@ def Receive():
 def percept():
     nodeName = "rabbit2backstage"  # 读取该节点的数据
 
-    comming_log = Logger('D:/data/daotai_comming.log', level='info')
-    comming_mq_log = Logger('D:/data/daotai_comming_mq.log', level='info')
+    # comming_log = Logger('D:/data/daotai_comming.log', level='info')
+    # comming_mq_log = Logger('D:/data/daotai_comming_mq.log', level='info')
 
     cf = configparser.ConfigParser()
     cf.read("./kdata/config.conf")
@@ -66,7 +66,7 @@ def percept():
     face_detect = face_recognition.FaceDetection()  # 初始化mtcnn
 
     print("face_detect:", face_detect)
-    comming_log.logger.info("face_detect: %s" % (face_detect))
+    # comming_log.logger.info("face_detect: %s" % (face_detect))
 
     # 性别年龄识别模型
     global age_gender_model
@@ -84,7 +84,7 @@ def percept():
             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                             routing_key=backstage_routingKey,
                                             body=str(heartbeatDict))
-            print("heartbeatDict:", heartbeatDict)
+            # print("heartbeatDict:", heartbeatDict)
 
         if frame_buffer.size() > 0:
             lock.acquire()
@@ -99,8 +99,8 @@ def percept():
             if bboxes == [] or landmarks == []:
                 pass
             else:
-                print("faces.faceNum:", len(bboxes))
-                comming_log.logger.info("faces.faceNum: %s" % (len(bboxes)))
+                print("1、faces.faceNum:", len(bboxes))
+                # comming_log.logger.info("faces.faceNum: %s" % (len(bboxes)))
                 box_areas = []
                 for i in range(0, len(bboxes)):
                     box = bboxes[i]
@@ -112,8 +112,8 @@ def percept():
                 # 找最大的人脸及坐标
                 max_face_area = max(box_areas)    # 最大的人脸面积
                 max_face_box = bboxes[box_areas.index(max_face_area)]    # 最大人脸面积框对应的坐标
-                print("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
-                comming_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
+                # print("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
+                # comming_log.logger.info("max_face_area: %s, max_face_box: %s" % (max_face_area, max_face_box))
                 if max_face_area > face_area_threshold and is_effective(max_face_box, height, width):    # 判断人脸框面积大于阀值 and 在有效识别区内
                     # print("mtcnn-bboxes--> ", bboxes)
                     # print("mtcnn-landmarks--> ", landmarks)
@@ -127,7 +127,7 @@ def percept():
                     face_imgs = np.empty((len(faces), face_size, face_size, 3))
                     # face_imgs[0, :, :, :] = cv2.resize(np.asarray(tmp), (face_size, face_size))    # PIL.Image转为np.ndarray，不resize会报错：ValueError: could not broadcast input array from shape (165,165,3) into shape (64,64,3)
                     face_imgs[0, :, :, :] = tmp
-                    print("face_imgs:", type(face_imgs), face_imgs.shape)
+                    # print("face_imgs:", type(face_imgs), face_imgs.shape)
 
                     results = age_gender_model.predict(face_imgs)  # 性别年龄识别
                     predicted_genders = results[0]
@@ -145,14 +145,14 @@ def percept():
                     commingDict["timestamp"] = str(int(time.time() * 1000))
                     commingDict["intention"] = "mycoming"  # 表示有人来了
 
-                    print("commingDict: %s" % (commingDict))
-                    comming_log.logger.info("commingDict: %s" % (commingDict))
+                    # print("commingDict: %s" % (commingDict))
+                    # comming_log.logger.info("commingDict: %s" % (commingDict))
                     try:
                         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
                     except ConnectionResetError as e:
-                        comming_mq_log.logger.error("ConnectionResetError: %s", traceback.format_exc())
+                        # comming_mq_log.logger.error("ConnectionResetError: %s", traceback.format_exc())
                         credentials = pika.PlainCredentials(username=username, password=password)
                         connection = pika.BlockingConnection(
                             pika.ConnectionParameters(host=host, port=port, virtual_host=vhost,
@@ -160,8 +160,8 @@ def percept():
                         connection.process_data_events()  # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
                         backstage_channel = connection.channel()
 
-                        comming_mq_log.logger.info("rabbit2backstage producer 已重连：%s %s %s %s" % (
-                            connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+                        # comming_mq_log.logger.info("rabbit2backstage producer 已重连：%s %s %s %s" % (
+                        #     connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
                         print("rabbit2backstage producer 已重连：%s %s %s %s" % (
                             connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
 
@@ -170,7 +170,7 @@ def percept():
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
-                    comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
+                    # comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                     saveMyComing2DB(commingDict)
 
             cv2.imshow("frame", frame)

@@ -221,7 +221,7 @@ def callback(ch, method, properties, body):
         # 拼接最后的json
         portraitDict = {}
         portraitDict["source"] = source  # 标识来源是语义yuyi端还是backstage后端
-        portraitDict["currTime"] = formatTimestamp(float(timestamp/1000), format="%Y-%m-%d_%H:%M:%S", ms=True)
+        portraitDict["timestamp"] = formatTimestamp(float(timestamp/1000), format="%Y-%m-%d_%H:%M:%S", ms=True)
         portraitDict["daotaiID"] = daotaiID
         portraitDict["portrait"] = featureDict  # 行李、性别、年龄、表情
         portraitDict["savefile"] = savefile  # 图片保存路径

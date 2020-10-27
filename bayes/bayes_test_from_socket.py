@@ -17,7 +17,7 @@ base_path = "D:/workspace/workspace_python/daotai-semantics"
 sys.path.append(base_path)
 from bayes.bayes_train import get_words, bernousNB_save_path, isChat
 from utils.commonutil import getFormatTime, resolving_recv
-from utils.dbUtil import saveYuyi2DB, saveUsed2DB
+from utils.dbUtil import saveYuyi2DB, saveUsed2DB, savePortrait2DB
 from config import daotaiID
 
 sys.path.append("..")
@@ -32,11 +32,11 @@ intentionList = []
 ask_sentenses_length = 5    # 当未包含关键字，且问话>5个字时，认为需要转接人工了
 
 # 日志
-semantics_logfile = 'D:/data/daotai_semantics.log'
-semantics_log = Logger(semantics_logfile, level='info')
-
-bayes_mq_logfile = 'D:/data/daotai_bayes_mq.log'
-bayes_mq_log = Logger(bayes_mq_logfile, level='info')
+# semantics_logfile = 'D:/data/daotai_semantics.log'
+# semantics_log = Logger(semantics_logfile, level='info')
+#
+# bayes_mq_logfile = 'D:/data/daotai_bayes_mq.log'
+# bayes_mq_log = Logger(bayes_mq_logfile, level='info')
 
 def loadAnswers():
     with open("../kdata/intention_answer.txt", encoding="utf-8", errors="ignore") as fo:
@@ -60,10 +60,11 @@ def get_newest_model(model_path):
     if os.path.exists(model_full_path):
         # 按文件最后修改时间排序，reverse=True表示降序排序
         filelist = sorted(os.listdir(model_full_path), key=lambda x: os.path.getctime(os.path.join(model_full_path, x)), reverse=True)
-        semantics_log.logger.info(("Use Model: %s" % (os.path.join(model_full_path, filelist[0]))))
+        # semantics_log.logger.info(("Use Model: %s" % (os.path.join(model_full_path, filelist[0]))))
         return os.path.join(model_full_path, filelist[0])
     else:
-        semantics_log.logger.info("Model path is not exists")
+        # semantics_log.logger.info("Model path is not exists")
+        print("Model path is not exists")
 
 '''
     读取配置文件，获取打开SocketServer的ip和端口
@@ -100,11 +101,11 @@ def getRabbitConn(nodeName):
     return connection, channel, EXCHANGE_NAME, routingKey
 
 backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
+# semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
 print("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
 
 portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
-semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
+# semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
 print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
 
 
@@ -137,13 +138,13 @@ def test_bayes():
     HOST, PORT = getSocketConfig()
     sev.bind((HOST, PORT))
     sev.listen()
-    semantics_log.logger.info("bayes semantics 已启动。。。")
+    # semantics_log.logger.info("bayes semantics 已启动。。。")
     print("bayes semantics 已启动。。。")
 
     conn, addr = sev.accept()    # 这儿会阻塞，等待连接
-    semantics_log.logger.info("%s %s" % (conn, addr))
+    # semantics_log.logger.info("%s %s" % (conn, addr))
     print(conn, addr)
-    semantics_log.logger.info((conn, addr))
+    # semantics_log.logger.info((conn, addr))
     sentences = ""
     empty_package_nums = 0    # 记录空包的数量
 
@@ -166,7 +167,7 @@ def test_bayes():
 
             for recvJson in recvJsonArr:    # 逐个处理每个json
                 # print("recvJson: %s" % recvJson)
-                semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
+                # semantics_log.logger.info("recvJson: %s" % recvJson)  # 所有传来的都会记录
                 daotaiID = recvJson["daotaiID"]
                 sentences = recvJson["sentences"]    # 现在安卓端、语义端、后端都用sentences字段
                 timestamp = recvJson["timestamp"]
@@ -183,7 +184,7 @@ def test_bayes():
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
-                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                    print("B1 开始: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onEndOfSpeech":
                     yuyiDict = {}
                     yuyiDict["daotaiID"] = daotaiID
@@ -195,7 +196,19 @@ def test_bayes():
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))  # 将语义识别结果给到后端
-                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                    print("B2-1 结束: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                elif msgCalled == "onEndOfSpeech_onEvent":
+                    yuyiDict = {}
+                    yuyiDict["daotaiID"] = daotaiID
+                    yuyiDict["sentences"] = sentences
+                    yuyiDict["timestamp"] = timestamp
+                    yuyiDict["intention"] = "onEndOfSpeech_onEvent"  # 停止听写
+
+                    # 之后将yuyiDict写入到消息队列
+                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                                    routing_key=backstage_routingKey,
+                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    print("B2-2 结束: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onError":
                     yuyiDict = {}
                     yuyiDict["daotaiID"] = daotaiID
@@ -214,18 +227,19 @@ def test_bayes():
                     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                     routing_key=backstage_routingKey,
                                                     body=str(yuyiDict))    # 将报错信息给到后端
-                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                    print("B3 报错: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onCloseConn":    # 客户端断开连接
-                    print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                    # print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
+                    pass
                 elif msgCalled == "onResult":  # 正常获取的识别结果
                     word_list = []
                     new_sentences, railway_dest, shinei_area = get_words(sentences)  # 关键词列表，火车目的地列表，市内目的地列表
-                    bayes_mq_log.logger.info(
-                        "------------------ onResult start %s ------------------" % str(getFormatTime(int(time.time()))))
+                    # bayes_mq_log.logger.info("------------------ onResult start %s ------------------" % str(getFormatTime(int(time.time()))))
+                    print("1、------------------ onResult start %s ------------------" % str(getFormatTime(int(time.time()))))
                     if isChat(new_sentences) is False:  # 如果不是咨询类
                         if len(shinei_area) > 0:
-                            print("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp)))
-                            bayes_mq_log.logger.info(("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp))))
+                            print("2-1、导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                            # bayes_mq_log.logger.info(("导航", "-->", shinei_area, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                             yuyiDict = {}
                             yuyiDict["daotaiID"] = daotaiID
@@ -237,8 +251,8 @@ def test_bayes():
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            # print("yuyiDict: %s" % str(yuyiDict))
-                            bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))  # 单独写个日志
+                            print("3-1、yuyiDict: %s" % str(yuyiDict))
+                            # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))  # 单独写个日志
                             saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
@@ -251,11 +265,13 @@ def test_bayes():
                             portraitDict["sentences"] = sentences + "|" + shinei_area[0]  # 询问问题
                             portraitDict["intention"] = "导航"  # 意图
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
-                            portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                                           routing_key=portrait_routingKey,
-                                                           body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # print("portraitDict: %s" % str(portraitDict))
-                            bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+
+                            savePortrait2DB(portraitDict)
+                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                            #                                routing_key=portrait_routingKey,
+                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
+                            # # print("portraitDict: %s" % str(portraitDict))
+                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                         else:
                             word_list.append(new_sentences)
                             predict = clf.predict(word_list)
@@ -279,15 +295,15 @@ def test_bayes():
                                 yuyiDict["timestamp"] = timestamp
                                 yuyiDict["intention"] = "听得懂|" + left  # 意图
 
-                                print(left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
-                                bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
+                                print("2-2、", left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp)))
+                                # bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                                 # 之后将yuyiDict写入到消息队列
                                 backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                                 routing_key=backstage_routingKey,
                                                                 body=str(yuyiDict))  # 将语义识别结果给到后端
-                                # print("yuyiDict: %s" % str(yuyiDict))
-                                bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                                print("3-2、yuyiDict: %s" % str(yuyiDict))
+                                # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                                 saveYuyi2DB(yuyiDict)
 
                                 # 人物画像端
@@ -304,14 +320,16 @@ def test_bayes():
                                     portraitDict["sentences"] = sentences  # 询问问题
                                 portraitDict["intention"] = left  # 意图
                                 portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
-                                portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                                               routing_key=portrait_routingKey,
-                                                               body=str(portraitDict))  # 将语义结果发送到用户画像端
-                                # print("portraitDict: %s" % str(portraitDict))
-                                bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+
+                                savePortrait2DB(portraitDict)
+                                # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                                #                                routing_key=portrait_routingKey,
+                                #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
+                                # # print("portraitDict: %s" % str(portraitDict))
+                                # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                     else:
-                        print("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
-                        bayes_mq_log.logger.info(("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp))))
+                        print("2-3、咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
+                        # bayes_mq_log.logger.info(("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                         if str(sentences.strip()).__contains__("转人工"):
                             yuyiDict = {}
@@ -324,8 +342,8 @@ def test_bayes():
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            # print("yuyiDict: %s" % str(yuyiDict))
-                            bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                            print("3-3、yuyiDict: %s" % str(yuyiDict))
+                            # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                             saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
@@ -338,11 +356,13 @@ def test_bayes():
                             portraitDict["sentences"] = sentences  # 询问问题
                             portraitDict["intention"] = "artificial"  # 意图
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
-                            portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                                           routing_key=portrait_routingKey,
-                                                           body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # print("portraitDict: %s" % str(portraitDict))
-                            bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+
+                            savePortrait2DB(portraitDict)
+                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                            #                                routing_key=portrait_routingKey,
+                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
+                            # # print("portraitDict: %s" % str(portraitDict))
+                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
                         else:    # 没有出现“转人工”，且听不懂
                             yuyiDict = {}
                             yuyiDict["daotaiID"] = daotaiID
@@ -354,8 +374,8 @@ def test_bayes():
                             backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                             routing_key=backstage_routingKey,
                                                             body=str(yuyiDict))  # 将语义识别结果给到后端
-                            # print("yuyiDict: %s" % str(yuyiDict))
-                            bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
+                            print("3-4、yuyiDict: %s" % str(yuyiDict))
+                            # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                             saveYuyi2DB(yuyiDict)
 
                             # 人物画像端
@@ -368,25 +388,27 @@ def test_bayes():
                             portraitDict["sentences"] = sentences  # 询问问题
                             portraitDict["intention"] = "artificial"  # 意图
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
-                            portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                                           routing_key=portrait_routingKey,
-                                                           body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # print("portraitDict: %s" % str(portraitDict))
-                            bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
-                    bayes_mq_log.logger.info(
-                        "++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
+
+                            savePortrait2DB(portraitDict)
+                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                            #                                routing_key=portrait_routingKey,
+                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
+                            # # print("portraitDict: %s" % str(portraitDict))
+                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                    # bayes_mq_log.logger.info("++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
+                    print("4、++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
                 else:  # 其他情况的处理
                     pass
         except ConnectionResetError as connectionResetError:
-            semantics_log.logger.warn("waiting connect: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
-            print("waiting connect: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+            # semantics_log.logger.warn("waiting connect: %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
+            # print("waiting connect: ", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
             conn, addr = sev.accept()
-            semantics_log.logger.info("%s %s" % (conn, addr))
-            print(conn, addr)
-            semantics_log.logger.info((conn, addr))
+            # semantics_log.logger.info("%s %s" % (conn, addr))
+            # print(conn, addr)
+            # semantics_log.logger.info((conn, addr))
             continue
         except Exception as e:
-            traceback.print_exc(file=open(semantics_logfile, 'a+'))
+            # traceback.print_exc(file=open(semantics_logfile, 'a+'))
             continue
 
 

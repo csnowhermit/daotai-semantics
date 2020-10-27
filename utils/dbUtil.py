@@ -1,4 +1,5 @@
 import re
+import time
 import pymysql
 import datetime
 import traceback
@@ -161,7 +162,8 @@ def create_daotai_portrait_table():
             `savefile` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '保存文件',
             `sentences` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '询问问题',
             `intention` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '意图',
-            `intentionLevel` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '意图级别'
+            `intentionLevel` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '意图级别', 
+            `read_or_not` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '是否已读'
         ) ENGINE = InnoDB CHARACTER SET = utf8mb4 ROW_FORMAT = Dynamic;
     '''
 
@@ -188,6 +190,16 @@ def savePortrait2DB(portraitDict):
         cursor = conn.cursor()
 
         portrait = portraitDict["portrait"]
+        if portrait is None:
+            luggage = ""
+            gender = ""
+            age = ""
+            emotion = ""
+        else:
+            luggage = portrait["luggage"]
+            gender = portrait["gender"]
+            age = portrait["age"]
+            emotion = portrait["emotion"]
         sentences = portraitDict["sentences"]
         if sentences is None or len(sentences.strip("\n")) < 1:
             return
@@ -196,12 +208,12 @@ def savePortrait2DB(portraitDict):
         sql = sql + '''
                 (source, currTime, daotaiID, 
                 portrait_luggage, portrait_gender, portrait_age, portrait_emotion, 
-                savefile, sentences, intention, intentionLevel) 
+                savefile, sentences, intention, intentionLevel, read_or_not) 
                 VALUES ('%s', '%s', '%s', 
                         '%s', '%s', '%s', '%s', 
-                        '%s', '%s', '%s', '%s')
-              ''' % (str(portraitDict["source"]), str(portraitDict["currTime"]), str(portraitDict["daotaiID"]),
-                     str(portrait["luggage"]), str(portrait["gender"]), str(portrait["age"]), str(portrait["emotion"]),
+                        '%s', '%s', '%s', '%s', '0')
+              ''' % (str(portraitDict["source"]), str(portraitDict["timestamp"]), str(portraitDict["daotaiID"]),
+                     str(luggage), str(gender), str(age), str(emotion),
                      str(portraitDict["savefile"]), str(sentences), str(portraitDict["intention"]), str(portraitDict["intentionLevel"]))
 
         # print(sql)
@@ -236,7 +248,35 @@ def create_daotai_bayes_table():
             `daotaiID` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '导台ID', 
             `sentences` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '询问问题',
             `currTime` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '当前时间',
-            `intention` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '意图'
+            `intention` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '意图', 
+            `read_or_not` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '是否已读'
+        ) ENGINE = InnoDB CHARACTER SET = utf8mb4 ROW_FORMAT = Dynamic;
+    '''
+
+    ret = cursor.execute(sql)
+
+    cursor.close()
+    conn.close()
+    return ret
+
+'''
+    创建远端命令表
+    :return ret 0，创建成功
+'''
+def create_daotai_remotecmd_table():
+    conn = pymysql.connect(host=host,
+                           port=port,
+                           user=user,
+                           password=password,
+                           database=database,
+                           charset='utf8mb4')
+    cursor = conn.cursor()
+
+    sql = '''
+        CREATE TABLE `daotai_remotecmd`  (
+            `currTime` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '当前时间',
+            `cmd` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '远端命令', 
+            `run_or_not` varchar(255) CHARACTER SET utf8mb4 NULL DEFAULT NULL COMMENT '是否已执行'
         ) ENGINE = InnoDB CHARACTER SET = utf8mb4 ROW_FORMAT = Dynamic;
     '''
 
@@ -271,8 +311,8 @@ def saveYuyi2DB(yuyiDict):
 
         sql = "insert into daotai_bayes"
         sql = sql + '''
-                (daotaiID, sentences, currTime, intention) 
-                VALUES ('%s', '%s', '%s', '%s')
+                (daotaiID, sentences, currTime, intention, read_or_not) 
+                VALUES ('%s', '%s', '%s', '%s', '0')
               ''' % (str(yuyiDict["daotaiID"]), str(sentences), str(currTime), str(yuyiDict["intention"]))
 
         # print(sql)
@@ -361,13 +401,51 @@ def saveMyComing2DB(commingDict):
         conn.close()
     return 0
 
+'''
+    保存远端命令
+'''
+def saveRemoteCmd2DB(cmd):
+    if table_exists("daotai_remotecmd") is False:
+        create_daotai_remotecmd_table()
+
+    try:
+        conn = pymysql.connect(host=host,
+                               port=port,
+                               user=user,
+                               password=password,
+                               database=database,
+                               charset='utf8mb4')
+        cursor = conn.cursor()
+
+        currTime = formatTimestamp(time.time(), format="%Y-%m-%d_%H:%M:%S", ms=True)
+
+        sql = "insert into daotai_remotecmd"
+        sql = sql + '''
+                (currTime, cmd, run_or_not) 
+                VALUES ('%s', '%s', '1')
+              ''' % (str(currTime), str(cmd))
+
+        # print(sql)
+        cursor.execute(sql)
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        traceback.print_exc(e)
+        conn.rollback()
+
+        cursor.close()
+        conn.close()
+    return 0
+
 if __name__ == '__main__':
     # print(getCurrDateStatus())
-    # portraitDict = {'source': 'yuyi', 'currTime': '2020-10-19_15:53:33.367', 'daotaiID': 'center01', 'portrait': {'luggage': [], 'gender': 'M', 'age': 22, 'emotion': 'happy'}, 'savefile': 'D:/daotai/portrait_imgs/center01_20201019155333367000.jpg', 'sentences': '我想去卫生间呀', 'intention': '找卫生间', 'intentionLevel': '1'}
-    # savePortrait2DB(portraitDict)
+    portraitDict = {'source': 'yuyi', 'timestamp': 1603768401622, 'daotaiID': 'center01', 'portrait': None, 'savefile': '', 'sentences': '我想去停车场', 'intention': '找停车场', 'intentionLevel': '1'}
+    savePortrait2DB(portraitDict)
     #
     # yuyiDict = {'daotaiID': 'center01', 'sentences': '都有这个210', 'timestamp': 1603090697807, 'intention': '听不懂'}
     # saveYuyi2DB(yuyiDict)
 
-    commingDict = {'daotaiID': 'center01', 'sentences': 'M,21,246,229,390,373,1000,480,640', 'timestamp': '1603098833034', 'intention': 'mycoming'}
-    saveMyComing2DB(commingDict)
+    # commingDict = {'daotaiID': 'center01', 'sentences': 'M,21,246,229,390,373,1000,480,640', 'timestamp': '1603098833034', 'intention': 'mycoming'}
+    # saveMyComing2DB(commingDict)
