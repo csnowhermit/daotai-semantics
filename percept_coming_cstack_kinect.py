@@ -55,12 +55,19 @@ def percept():
     backstage_EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
     vhost = str(cf.get(nodeName, "vhost"))
     backstage_routingKey = str(cf.get(nodeName, "routingKey"))
+    backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
 
     credentials = pika.PlainCredentials(username=username, password=password)
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
     connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
     backstage_channel = connection.channel()
+
+    # 以下原来是在消费者里面
+    backstage_channel.exchange_declare(exchange=backstage_EXCHANGE_NAME,
+                             exchange_type='direct')  # 声明交换机
+    backstage_channel.queue_declare(queue=backstage_queueName)  # 声明队列。消费者需要这样代码，生产者不需要
+    backstage_channel.queue_bind(queue=backstage_queueName, exchange=backstage_EXCHANGE_NAME, routing_key=backstage_routingKey)  # 绑定队列和交换机
 
     # 人脸检测
     global face_detect    # 子线程里加载模型，需要将模型指定成全局变量

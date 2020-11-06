@@ -90,6 +90,7 @@ def getRabbitConn(nodeName):
     EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
     vhost = str(cf.get(nodeName, "vhost"))
     routingKey = str(cf.get(nodeName, "routingKey"))
+    queueName = str(cf.get(nodeName, "QUEUE_NAME"))
 
     credentials = pika.PlainCredentials(username=username, password=password)
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
@@ -97,6 +98,12 @@ def getRabbitConn(nodeName):
     channel = connection.channel()
     # channel.queue_declare(queue=routingKey, durable=True)    # 定义持久化队列
     # channel.queue_declare(queue=routingKey)  # 定义持久化队列
+
+    # 以下原来是在消费者里面
+    channel.exchange_declare(exchange=EXCHANGE_NAME,
+                             exchange_type='direct')    # 声明交换机
+    channel.queue_declare(queue=queueName)    # 声明队列。消费者需要这样代码，生产者不需要
+    channel.queue_bind(queue=queueName, exchange=EXCHANGE_NAME, routing_key=routingKey)    # 绑定队列和交换机
 
     return connection, channel, EXCHANGE_NAME, routingKey
 
@@ -109,6 +116,7 @@ portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingK
 print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
 
 
+# 到portrait的心跳机制
 # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
 def portrait_heartbeat():
     heartbeatDict = {}
@@ -121,9 +129,26 @@ def portrait_heartbeat():
                                    routing_key=portrait_routingKey,
                                    body=str(heartbeatDict))
     # print("heartbeatDict:", heartbeatDict)
-    global timer
-    timer = threading.Timer(3, portrait_heartbeat)
-    timer.start()
+    global timer_portrait
+    timer_portrait = threading.Timer(3, portrait_heartbeat)
+    timer_portrait.start()
+
+# 到backstage的心跳机制
+# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+def backstage_heartbeat():
+    heartbeatDict = {}
+    heartbeatDict["daotaiID"] = daotaiID
+    heartbeatDict["sentences"] = ""
+    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+    heartbeatDict["intention"] = "heartbeat"  # 心跳
+
+    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                    routing_key=backstage_routingKey,
+                                    body=str(heartbeatDict))
+    # print("heartbeatDict:", heartbeatDict)
+    global timer_backstage
+    timer_backstage = threading.Timer(3, backstage_heartbeat)
+    timer_backstage.start()
 
 
 '''
@@ -407,14 +432,18 @@ def test_bayes():
             # print(conn, addr)
             # semantics_log.logger.info((conn, addr))
             continue
+        except
         except Exception as e:
             # traceback.print_exc(file=open(semantics_logfile, 'a+'))
             continue
 
 
 def main():
-    heartbeat = threading.Timer(3, portrait_heartbeat)
-    heartbeat.start()
+    heartbeat_p = threading.Timer(3, portrait_heartbeat)
+    heartbeat_p.start()
+
+    heartbeat_b = threading.Timer(3, backstage_heartbeat)
+    heartbeat_b.start()
 
     bayes = threading.Thread(target=test_bayes)
     bayes.start()
