@@ -40,7 +40,7 @@ backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
 
 credentials = pika.PlainCredentials(username=username, password=password)
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
+    pika.ConnectionParameters(host=host, port=port, heartbeat=0, virtual_host=vhost, credentials=credentials))
 connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
 backstage_channel = connection.channel()
 

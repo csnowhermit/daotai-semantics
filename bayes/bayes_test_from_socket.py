@@ -11,6 +11,7 @@ import traceback
 import threading
 import itertools
 import pika
+from pika.exceptions import StreamLostError
 from sklearn.externals import joblib
 
 base_path = "D:/workspace/workspace_python/daotai-semantics"
@@ -93,7 +94,7 @@ def getRabbitConn(nodeName):
     queueName = str(cf.get(nodeName, "QUEUE_NAME"))
 
     credentials = pika.PlainCredentials(username=username, password=password)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, heartbeat=0, virtual_host=vhost, credentials=credentials))
     connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
     channel = connection.channel()
     # channel.queue_declare(queue=routingKey, durable=True)    # 定义持久化队列
@@ -125,9 +126,12 @@ def portrait_heartbeat():
     heartbeatDict["timestamp"] = str(int(time.time() * 1000))
     heartbeatDict["intention"] = "heartbeat"  # 心跳
 
-    portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                   routing_key=portrait_routingKey,
-                                   body=str(heartbeatDict))
+    try:
+        portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                                       routing_key=portrait_routingKey,
+                                       body=str(heartbeatDict))
+    except StreamLostError as e:
+
     # print("heartbeatDict:", heartbeatDict)
     global timer_portrait
     timer_portrait = threading.Timer(3, portrait_heartbeat)
