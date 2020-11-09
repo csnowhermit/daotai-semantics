@@ -25,6 +25,48 @@ from wide_resnet import WideResNet
 frame_buffer = Stack(30 * 5)
 lock = threading.RLock()
 
+# 读取配置文件并创建rabbit producer
+nodeName = "rabbit2backstage"  # 读取该节点的数据
+cf = configparser.ConfigParser()
+cf.read("./kdata/config.conf")
+host = str(cf.get(nodeName, "host"))
+port = int(cf.get(nodeName, "port"))
+username = str(cf.get(nodeName, "username"))
+password = str(cf.get(nodeName, "password"))
+backstage_EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
+vhost = str(cf.get(nodeName, "vhost"))
+backstage_routingKey = str(cf.get(nodeName, "routingKey"))
+backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
+
+credentials = pika.PlainCredentials(username=username, password=password)
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
+connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
+backstage_channel = connection.channel()
+
+# 以下原来是在消费者里面
+backstage_channel.exchange_declare(exchange=backstage_EXCHANGE_NAME,
+                         exchange_type='direct')  # 声明交换机
+backstage_channel.queue_declare(queue=backstage_queueName)  # 声明队列。消费者需要这样代码，生产者不需要
+backstage_channel.queue_bind(queue=backstage_queueName, exchange=backstage_EXCHANGE_NAME, routing_key=backstage_routingKey)  # 绑定队列和交换机
+
+# 到backstage的心跳机制
+# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+def mycoming_heartbeat():
+    heartbeatDict = {}
+    heartbeatDict["daotaiID"] = daotaiID
+    heartbeatDict["sentences"] = ""
+    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+    heartbeatDict["intention"] = "heartbeat"  # 心跳
+
+    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+                                   routing_key=backstage_routingKey,
+                                   body=str(heartbeatDict))
+    # print("heartbeatDict:", heartbeatDict)
+    global timer_mycoming
+    timer_mycoming = threading.Timer(3, mycoming_heartbeat)
+    timer_mycoming.start()
+
 def Receive():
     print("start Receive")
     cap = cv2.VideoCapture(0)
@@ -40,34 +82,8 @@ def Receive():
             lock.release()
 
 def percept():
-    nodeName = "rabbit2backstage"  # 读取该节点的数据
-
     # comming_log = Logger('D:/data/daotai_comming.log', level='info')
     # comming_mq_log = Logger('D:/data/daotai_comming_mq.log', level='info')
-
-    cf = configparser.ConfigParser()
-    cf.read("./kdata/config.conf")
-    host = str(cf.get(nodeName, "host"))
-    port = int(cf.get(nodeName, "port"))
-    username = str(cf.get(nodeName, "username"))
-    password = str(cf.get(nodeName, "password"))
-    backstage_EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
-    vhost = str(cf.get(nodeName, "vhost"))
-    backstage_routingKey = str(cf.get(nodeName, "routingKey"))
-    backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
-
-    credentials = pika.PlainCredentials(username=username, password=password)
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=credentials))
-    connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
-    backstage_channel = connection.channel()
-
-    # 以下原来是在消费者里面
-    backstage_channel.exchange_declare(exchange=backstage_EXCHANGE_NAME,
-                             exchange_type='direct')  # 声明交换机
-    backstage_channel.queue_declare(queue=backstage_queueName)  # 声明队列。消费者需要这样代码，生产者不需要
-    backstage_channel.queue_bind(queue=backstage_queueName, exchange=backstage_EXCHANGE_NAME, routing_key=backstage_routingKey)  # 绑定队列和交换机
-
 
     # 人脸检测
     global face_detect    # 子线程里加载模型，需要将模型指定成全局变量
@@ -82,18 +98,6 @@ def percept():
     age_gender_model.load_weights("./model_data/weights.18-4.06.hdf5")
 
     while True:
-        if int(time.time() * 1000) % 500 == 0:    # 每5s手动发一次心跳，避免rabbit server自动断开连接。自动发心跳机制存在的问题：因rabbitmq有流量控制机制，会屏蔽掉自动心跳机制
-            heartbeatDict = {}
-            heartbeatDict["daotaiID"] = daotaiID
-            heartbeatDict["sentences"] = ""
-            heartbeatDict["timestamp"] = str(int(time.time() * 1000))
-            heartbeatDict["intention"] = "heartbeat"  # 心跳
-
-            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                            routing_key=backstage_routingKey,
-                                            body=str(heartbeatDict))
-            # print("heartbeatDict:", heartbeatDict)
-
         if frame_buffer.size() > 0:
             lock.acquire()
             frame = frame_buffer.pop()    # 每次拿最新的
@@ -156,6 +160,9 @@ def percept():
                     # print("commingDict: %s" % (commingDict))
                     # comming_log.logger.info("commingDict: %s" % (commingDict))
                     try:
+                        # global backstage_EXCHANGE_NAME
+                        # global backstage_routingKey
+                        global backstage_channel
                         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                                         routing_key=backstage_routingKey,
                                                         body=str(commingDict))  # 将语义识别结果给到后端
@@ -185,6 +192,8 @@ def percept():
             cv2.waitKey(1)
 
 def main():
+    p_heartbeat = threading.Timer(3, mycoming_heartbeat)
+    p_heartbeat.start()
     p1 = threading.Thread(target=Receive)
     p2 = threading.Thread(target=percept)
     p1.start()
