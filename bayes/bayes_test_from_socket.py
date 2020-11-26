@@ -250,6 +250,12 @@ def test_bayes():
                         if errorArr[1] == "11201":    # 说明在线版额度用完了，需要切离线版了
                             # 此处写数据库，指令接收端从库中查询是用在线版还是离线版
                             saveUsed2DB(str(getFormatTime(timestamp)), errorArr[0], 1)
+                        elif errorArr[1] == "23008":
+                            print("B3 23008(本地引擎错误)，将自行重启监听")
+                        elif errorArr[1] == "10118":
+                            print("B3 10118(未检测到说话)，将自行重启监听")
+                        else:
+                            pass
 
                     # 之后将yuyiDict写入到消息队列（给后端的）
                     write2backstage(str(yuyiDict))

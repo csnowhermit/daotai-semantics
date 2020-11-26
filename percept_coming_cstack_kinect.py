@@ -28,48 +28,56 @@ from wide_resnet import WideResNet
 frame_buffer = Stack(30 * 5)
 lock = threading.RLock()
 
-# 读取配置文件并创建rabbit producer
-nodeName = "rabbit2backstage"  # 读取该节点的数据
-cf = configparser.ConfigParser()
-cf.read("./kdata/config.conf")
-host = str(cf.get(nodeName, "host"))
-port = int(cf.get(nodeName, "port"))
-username = str(cf.get(nodeName, "username"))
-password = str(cf.get(nodeName, "password"))
-backstage_EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
-vhost = str(cf.get(nodeName, "vhost"))
-backstage_routingKey = str(cf.get(nodeName, "routingKey"))
-backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
+# 发送来人消息
+def send_comming(commingDict):
+    # 读取配置文件并创建rabbit producer
+    nodeName = "rabbit2backstage"  # 读取该节点的数据
+    cf = configparser.ConfigParser()
+    cf.read("./kdata/config.conf")
+    host = str(cf.get(nodeName, "host"))
+    port = int(cf.get(nodeName, "port"))
+    username = str(cf.get(nodeName, "username"))
+    password = str(cf.get(nodeName, "password"))
+    backstage_EXCHANGE_NAME = str(cf.get(nodeName, "EXCHANGE_NAME"))
+    vhost = str(cf.get(nodeName, "vhost"))
+    backstage_routingKey = str(cf.get(nodeName, "routingKey"))
+    backstage_queueName = str(cf.get(nodeName, "QUEUE_NAME"))
 
-credentials = pika.PlainCredentials(username=username, password=password)
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host=host, port=port, heartbeat=0, virtual_host=vhost, credentials=credentials))
-connection.process_data_events()    # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
-backstage_channel = connection.channel()
+    credentials = pika.PlainCredentials(username=username, password=password)
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(host=host, port=port, heartbeat=0, virtual_host=vhost, credentials=credentials))
+    connection.process_data_events()  # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
+    backstage_channel = connection.channel()
 
-# 以下原来是在消费者里面
-backstage_channel.exchange_declare(exchange=backstage_EXCHANGE_NAME,
-                         exchange_type='direct')  # 声明交换机
-backstage_channel.queue_declare(queue=backstage_queueName)  # 声明队列。消费者需要这样代码，生产者不需要
-backstage_channel.queue_bind(queue=backstage_queueName, exchange=backstage_EXCHANGE_NAME, routing_key=backstage_routingKey)  # 绑定队列和交换机
-
-
-# 到backstage的心跳机制
-# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
-def mycoming_heartbeat():
-    heartbeatDict = {}
-    heartbeatDict["daotaiID"] = daotaiID
-    heartbeatDict["sentences"] = ""
-    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
-    heartbeatDict["intention"] = "heartbeat"  # 心跳
+    # 以下原来是在消费者里面
+    backstage_channel.exchange_declare(exchange=backstage_EXCHANGE_NAME,
+                                       exchange_type='direct')  # 声明交换机
+    backstage_channel.queue_declare(queue=backstage_queueName)  # 声明队列。消费者需要这样代码，生产者不需要
+    backstage_channel.queue_bind(queue=backstage_queueName, exchange=backstage_EXCHANGE_NAME,
+                                 routing_key=backstage_routingKey)  # 绑定队列和交换机
 
     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                   routing_key=backstage_routingKey,
-                                   body=str(heartbeatDict))
-    # print("heartbeatDict:", heartbeatDict)
-    global timer_mycoming
-    timer_mycoming = threading.Timer(3, mycoming_heartbeat)
-    timer_mycoming.start()
+                                    routing_key=backstage_routingKey,
+                                    body=str(commingDict))  # 将语义识别结果给到后端
+
+
+
+# # 到backstage的心跳机制
+# # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+# def mycoming_heartbeat():
+#     heartbeatDict = {}
+#     heartbeatDict["daotaiID"] = daotaiID
+#     heartbeatDict["sentences"] = ""
+#     heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+#     heartbeatDict["intention"] = "heartbeat"  # 心跳
+#
+#     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+#                                    routing_key=backstage_routingKey,
+#                                    body=str(heartbeatDict))
+#     # print("heartbeatDict:", heartbeatDict)
+#     global timer_mycoming
+#     timer_mycoming = threading.Timer(3, mycoming_heartbeat)
+#     timer_mycoming.start()
 
 def Receive():
     print("start Receive")
@@ -161,29 +169,7 @@ def percept():
 
                     # print("commingDict: %s" % (commingDict))
                     # comming_log.logger.info("commingDict: %s" % (commingDict))
-                    try:
-                        global backstage_channel
-                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                        routing_key=backstage_routingKey,
-                                                        body=str(commingDict))  # 将语义识别结果给到后端
-                    except ConnectionResetError as e:
-                        # comming_mq_log.logger.error("ConnectionResetError: %s", traceback.format_exc())
-                        credentials = pika.PlainCredentials(username=username, password=password)
-                        connection = pika.BlockingConnection(
-                            pika.ConnectionParameters(host=host, port=port, virtual_host=vhost,
-                                                      credentials=credentials))
-                        connection.process_data_events()  # 防止主进程长时间等待，而导致rabbitmq主动断开连接，所以要定期发心跳调用
-                        backstage_channel = connection.channel()
-
-                        # comming_mq_log.logger.info("rabbit2backstage producer 已重连：%s %s %s %s" % (
-                        #     connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-                        print("rabbit2backstage producer 已重连：%s %s %s %s" % (
-                            connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-
-                        # 重连后再发一次
-                        backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                        routing_key=backstage_routingKey,
-                                                        body=str(commingDict))  # 将语义识别结果给到后端
+                    send_comming(str(commingDict))
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
                     # comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                     saveMyComing2DB(commingDict)
@@ -194,8 +180,8 @@ def percept():
             cv2.waitKey(1)
 
 if __name__ == '__main__':
-    p_heartbeat = threading.Timer(3, mycoming_heartbeat)
-    p_heartbeat.start()
+    # p_heartbeat = threading.Timer(3, mycoming_heartbeat)
+    # p_heartbeat.start()
     p1 = threading.Thread(target=Receive)
     p2 = threading.Thread(target=percept)
     p1.start()
