@@ -108,51 +108,56 @@ def getRabbitConn(nodeName):
 
     return connection, channel, EXCHANGE_NAME, routingKey
 
-backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
-# semantics_log.logger.info("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-print("rabbit2backstage producer 已启动：%s %s %s %s" % (backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey))
-
-portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
-# semantics_log.logger.info("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
-print("rabbit2portrait producer 已启动：%s %s %s %s" % (portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey))
-
-
-# 到portrait的心跳机制
-# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
-def portrait_heartbeat():
-    heartbeatDict = {}
-    heartbeatDict["daotaiID"] = daotaiID
-    heartbeatDict["sentences"] = ""
-    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
-    heartbeatDict["intention"] = "heartbeat"  # 心跳
-
-    try:
-        portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                       routing_key=portrait_routingKey,
-                                       body=str(heartbeatDict))
-    except StreamLostError as e:
-
-    # print("heartbeatDict:", heartbeatDict)
-    global timer_portrait
-    timer_portrait = threading.Timer(3, portrait_heartbeat)
-    timer_portrait.start()
-
-# 到backstage的心跳机制
-# 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
-def backstage_heartbeat():
-    heartbeatDict = {}
-    heartbeatDict["daotaiID"] = daotaiID
-    heartbeatDict["sentences"] = ""
-    heartbeatDict["timestamp"] = str(int(time.time() * 1000))
-    heartbeatDict["intention"] = "heartbeat"  # 心跳
-
+# 语义识别结果写入到后端
+def write2backstage(yuyiStr):
+    backstage_connection, backstage_channel, backstage_EXCHANGE_NAME, backstage_routingKey = getRabbitConn("rabbit2backstage")
     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                     routing_key=backstage_routingKey,
-                                    body=str(heartbeatDict))
-    # print("heartbeatDict:", heartbeatDict)
-    global timer_backstage
-    timer_backstage = threading.Timer(3, backstage_heartbeat)
-    timer_backstage.start()
+                                    body=str(yuyiStr))  # 将语义识别结果给到后端
+
+# 写入到用户画像端
+def write2portrait(portraitStr):
+    portrait_connection, portrait_channel, portrait_EXCHANGE_NAME, portrait_routingKey = getRabbitConn("rabbit2portrait")
+    portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+                                   routing_key=portrait_routingKey,
+                                   body=str(portraitStr))  # 将语义结果发送到用户画像端
+
+# # 到portrait的心跳机制
+# # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+# def portrait_heartbeat():
+#     heartbeatDict = {}
+#     heartbeatDict["daotaiID"] = daotaiID
+#     heartbeatDict["sentences"] = ""
+#     heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+#     heartbeatDict["intention"] = "heartbeat"  # 心跳
+#
+#     try:
+#         portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
+#                                        routing_key=portrait_routingKey,
+#                                        body=str(heartbeatDict))
+#     except StreamLostError as e:
+#
+#     # print("heartbeatDict:", heartbeatDict)
+#     global timer_portrait
+#     timer_portrait = threading.Timer(3, portrait_heartbeat)
+#     timer_portrait.start()
+#
+# # 到backstage的心跳机制
+# # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
+# def backstage_heartbeat():
+#     heartbeatDict = {}
+#     heartbeatDict["daotaiID"] = daotaiID
+#     heartbeatDict["sentences"] = ""
+#     heartbeatDict["timestamp"] = str(int(time.time() * 1000))
+#     heartbeatDict["intention"] = "heartbeat"  # 心跳
+#
+#     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
+#                                     routing_key=backstage_routingKey,
+#                                     body=str(heartbeatDict))
+#     # print("heartbeatDict:", heartbeatDict)
+#     global timer_backstage
+#     timer_backstage = threading.Timer(3, backstage_heartbeat)
+#     timer_backstage.start()
 
 
 '''
@@ -210,9 +215,7 @@ def test_bayes():
                     yuyiDict["intention"] = "onBeginOfSpeech"  # 开始听写
 
                     # 之后将yuyiDict写入到消息队列
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    write2backstage(str(yuyiDict))
                     print("B1 开始: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onEndOfSpeech":
                     yuyiDict = {}
@@ -222,9 +225,7 @@ def test_bayes():
                     yuyiDict["intention"] = "onEndOfSpeech"  # 停止听写
 
                     # 之后将yuyiDict写入到消息队列
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    write2backstage(str(yuyiDict))
                     print("B2-1 结束: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onEndOfSpeech_onEvent":
                     yuyiDict = {}
@@ -234,9 +235,7 @@ def test_bayes():
                     yuyiDict["intention"] = "onEndOfSpeech_onEvent"  # 停止听写
 
                     # 之后将yuyiDict写入到消息队列
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(yuyiDict))  # 将语义识别结果给到后端
+                    write2backstage(str(yuyiDict))
                     print("B2-2 结束: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onError":
                     yuyiDict = {}
@@ -253,9 +252,7 @@ def test_bayes():
                             saveUsed2DB(str(getFormatTime(timestamp)), errorArr[0], 1)
 
                     # 之后将yuyiDict写入到消息队列（给后端的）
-                    backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                    routing_key=backstage_routingKey,
-                                                    body=str(yuyiDict))    # 将报错信息给到后端
+                    write2backstage(str(yuyiDict))
                     print("B3 报错: %s ****** %s" % (sentences, str(getFormatTime(timestamp))))
                 elif msgCalled == "onCloseConn":    # 客户端断开连接
                     # print("%s ****** %s" % (sentences, str(getFormatTime(timestamp))))
@@ -277,9 +274,7 @@ def test_bayes():
                             yuyiDict["intention"] = "导航"  # 意图
 
                             # 之后将yuyiDict写入到消息队列
-                            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                            routing_key=backstage_routingKey,
-                                                            body=str(yuyiDict))  # 将语义识别结果给到后端
+                            write2backstage(str(yuyiDict))
                             print("3-1、yuyiDict: %s" % str(yuyiDict))
                             # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))  # 单独写个日志
                             saveYuyi2DB(yuyiDict)
@@ -296,11 +291,7 @@ def test_bayes():
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
 
                             savePortrait2DB(portraitDict)
-                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                            #                                routing_key=portrait_routingKey,
-                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # # print("portraitDict: %s" % str(portraitDict))
-                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                            write2portrait(str(portraitDict))    # 写入用户画像端
                         else:
                             word_list.append(new_sentences)
                             predict = clf.predict(word_list)
@@ -328,9 +319,7 @@ def test_bayes():
                                 # bayes_mq_log.logger.info((left, "-->", word_list, "-->", sentences, "-->", str(getFormatTime(timestamp))))
 
                                 # 之后将yuyiDict写入到消息队列
-                                backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                                routing_key=backstage_routingKey,
-                                                                body=str(yuyiDict))  # 将语义识别结果给到后端
+                                write2backstage(str(yuyiDict))
                                 print("3-2、yuyiDict: %s" % str(yuyiDict))
                                 # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                                 saveYuyi2DB(yuyiDict)
@@ -351,11 +340,7 @@ def test_bayes():
                                 portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
 
                                 savePortrait2DB(portraitDict)
-                                # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                                #                                routing_key=portrait_routingKey,
-                                #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
-                                # # print("portraitDict: %s" % str(portraitDict))
-                                # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                                write2portrait(str(portraitDict))
                     else:
                         print("2-3、咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp)))  # 咨询场景，判断标准：说话字数>5字
                         # bayes_mq_log.logger.info(("咨询类", "-->", sentences, "-->", str(getFormatTime(timestamp))))
@@ -368,9 +353,7 @@ def test_bayes():
                             yuyiDict["intention"] = "artificial"  # 意图
 
                             # 之后将yuyiDict写入到消息队列
-                            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                            routing_key=backstage_routingKey,
-                                                            body=str(yuyiDict))  # 将语义识别结果给到后端
+                            write2backstage(str(yuyiDict))
                             print("3-3、yuyiDict: %s" % str(yuyiDict))
                             # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                             saveYuyi2DB(yuyiDict)
@@ -387,11 +370,7 @@ def test_bayes():
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
 
                             savePortrait2DB(portraitDict)
-                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                            #                                routing_key=portrait_routingKey,
-                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # # print("portraitDict: %s" % str(portraitDict))
-                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                            write2portrait(str(portraitDict))    # 写入用户画像端
                         else:    # 没有出现“转人工”，且听不懂
                             yuyiDict = {}
                             yuyiDict["daotaiID"] = daotaiID
@@ -400,9 +379,7 @@ def test_bayes():
                             yuyiDict["intention"] = "听不懂"  # 意图
 
                             # 之后将yuyiDict写入到消息队列
-                            backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
-                                                            routing_key=backstage_routingKey,
-                                                            body=str(yuyiDict))  # 将语义识别结果给到后端
+                            write2backstage(str(yuyiDict))
                             print("3-4、yuyiDict: %s" % str(yuyiDict))
                             # bayes_mq_log.logger.info("yuyiDict: %s" % str(yuyiDict))
                             saveYuyi2DB(yuyiDict)
@@ -419,11 +396,7 @@ def test_bayes():
                             portraitDict["intentionLevel"] = "1"  # 意图等级：1级，直接意图；2级，意图的分类；
 
                             savePortrait2DB(portraitDict)
-                            # portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
-                            #                                routing_key=portrait_routingKey,
-                            #                                body=str(portraitDict))  # 将语义结果发送到用户画像端
-                            # # print("portraitDict: %s" % str(portraitDict))
-                            # # bayes_mq_log.logger.info("portraitDict: %s" % str(portraitDict))
+                            write2portrait(str(portraitDict))
                     # bayes_mq_log.logger.info("++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
                     print("4、++++++++++++++++++ onResult end %s ++++++++++++++++++" % str(getFormatTime(int(time.time()))))
                 else:  # 其他情况的处理
@@ -436,21 +409,21 @@ def test_bayes():
             # print(conn, addr)
             # semantics_log.logger.info((conn, addr))
             continue
-        except
         except Exception as e:
             # traceback.print_exc(file=open(semantics_logfile, 'a+'))
             continue
 
 
 def main():
-    heartbeat_p = threading.Timer(3, portrait_heartbeat)
-    heartbeat_p.start()
-
-    heartbeat_b = threading.Timer(3, backstage_heartbeat)
-    heartbeat_b.start()
-
-    bayes = threading.Thread(target=test_bayes)
-    bayes.start()
+    # heartbeat_p = threading.Timer(3, portrait_heartbeat)
+    # heartbeat_p.start()
+    #
+    # heartbeat_b = threading.Timer(3, backstage_heartbeat)
+    # heartbeat_b.start()
+    #
+    # bayes = threading.Thread(target=test_bayes)
+    # bayes.start()
+    test_bayes()
 
 
 if __name__ == '__main__':
