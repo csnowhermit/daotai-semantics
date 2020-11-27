@@ -114,6 +114,7 @@ def write2backstage(yuyiStr):
     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                     routing_key=backstage_routingKey,
                                     body=str(yuyiStr))  # 将语义识别结果给到后端
+    backstage_connection.close()
 
 # 写入到用户画像端
 def write2portrait(portraitStr):
@@ -121,6 +122,7 @@ def write2portrait(portraitStr):
     portrait_channel.basic_publish(exchange=portrait_EXCHANGE_NAME,
                                    routing_key=portrait_routingKey,
                                    body=str(portraitStr))  # 将语义结果发送到用户画像端
+    portrait_connection.close()
 
 # # 到portrait的心跳机制
 # # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制

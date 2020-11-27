@@ -45,6 +45,7 @@ if __name__ == '__main__':
         backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                         routing_key=backstage_routingKey,
                                         body=s)  # 将语义识别结果给到后端
+        backstage_connection.close()
         end = time.time()
         print(end-start)
         list.append(end-start)

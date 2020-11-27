@@ -56,6 +56,8 @@ def send_comming(commingDict):
     backstage_channel.basic_publish(exchange=backstage_EXCHANGE_NAME,
                                     routing_key=backstage_routingKey,
                                     body=str(commingDict))  # 将语义识别结果给到后端
+    connection.close()
+
 # # 到backstage的心跳机制
 # # 手动做心跳机制，避免rabbit server自动断开连接。。自动发心跳机制存在的问题：因rannitmq有流量控制，会屏蔽掉自动心跳机制
 # def mycoming_heartbeat():
@@ -152,7 +154,12 @@ def percept():
                     ages = np.arange(0, 101).reshape(101, 1)
                     predicted_ages = results[1].dot(ages).flatten()
 
-                    gender = "F" if predicted_genders[0][0] > 0.5 else "M"
+                    gender = "F" if predicted_genders[0][0] > 0.5 else "M"  # 性别初筛
+                    gender_ratio = max(predicted_genders[0])  # 性别概率
+
+                    if gender_ratio < gender_ratio_threshold:    # 低于性别阀值，直接说 乘客
+                        gender = "O"
+
                     age = int(predicted_ages[0])
 
                     left, top, right, bottom = max_face_box

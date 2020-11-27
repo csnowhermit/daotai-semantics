@@ -160,10 +160,10 @@ def is_effective(box, height, width):
     effective_width = width * effective_area_rate[0]    # 有效区域宽度
     effective_height = height * effective_area_rate[1]    # 有效区域高度
 
-    effective_left = int(effective_center[0] - width / 2)    # 有效区域：左
-    effective_top = int(effective_center[1] - height / 2)    # 有效区域：上
-    effective_right = int(effective_center[0] + width / 2)    # 有效区域：右
-    effective_bottom = int(effective_center[1] + height / 2)    # 有效区域：下
+    effective_left = int(effective_center[0] - effective_width / 2)    # 有效区域：左
+    effective_top = int(effective_center[1] - effective_height / 2)    # 有效区域：上
+    effective_right = int(effective_center[0] + effective_width / 2)    # 有效区域：右
+    effective_bottom = int(effective_center[1] + effective_height / 2)    # 有效区域：下
 
     if (centerx >= effective_left and centerx <= effective_right) and (centery >= effective_top and centery <= effective_bottom):
         return True
