@@ -4,12 +4,13 @@ import socket
 import traceback
 from utils.pyKinectUtil import Kinect
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 
 import face_recognition
 from config import *
 from utils.commonutil import getFormatTime, crop_face, is_effective
 from utils.dbUtil import saveMyComing2DB
+from utils.dateUtil import formatTimestamp
 import configparser
 import pika
 from utils.CapUtil import Stack
@@ -115,7 +116,8 @@ def percept():
             frame_buffer.clear()    # 每次拿之后清空缓冲区
             lock.release()
 
-            # print("frame:", type(frame), frame.shape)    # <class 'numpy.ndarray'> (1080, 1920, 3)，（高，宽，通道）
+            frame = np.array(frame)
+            # print("frame:", type(frame), frame.shape)    # numpy.ndarray, (1080, 1920, 3)
             height, width, channel = frame.shape
             bboxes, landmarks = face_detect.detect_face(frame)
             bboxes, landmarks = face_detect.get_square_bboxes(bboxes, landmarks, fixed="height")  # 以高为基准，获得等宽的矩形
@@ -140,7 +142,10 @@ def percept():
                 if max_face_area > face_area_threshold and is_effective(max_face_box, height, width):    # 判断人脸框面积大于阀值 and 在有效识别区内
                     # print("mtcnn-bboxes--> ", bboxes)
                     # print("mtcnn-landmarks--> ", landmarks)
+                    print("2、人大小符合要求：面积：%d" % (max_face_area))
                     # 这里新增来人的性别年龄识别
+                    left, top, right, bottom = max_face_box
+
                     image = Image.fromarray(frame)
 
                     # 2.性别年龄检测
@@ -165,8 +170,6 @@ def percept():
 
                     age = int(predicted_ages[0])
 
-                    left, top, right, bottom = max_face_box
-
                     commingDict = {}
                     commingDict["daotaiID"] = daotaiID
                     commingDict["sentences"] = "%s,%s,%s,%s,%s,%s,%s,%s,%s" % (gender, str(age), str(left), str(top), str(right), str(bottom), str(face_area_threshold), str(height), str(width))    # sentences字段填性别、年龄、位置（左上右下），逗号隔开
@@ -179,6 +182,33 @@ def percept():
                     print("已写入消息队列-commingDict: %s" % str(commingDict))
                     # comming_mq_log.logger.info("已写入消息队列-commingDict: %s" % str(commingDict))
                     saveMyComing2DB(commingDict)
+
+                    # 这里保存下标注过的图片
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)  # 红色框，BGR
+
+                    showInfo = "%s %s" % (gender, str(age))  # 性别，年龄
+                    # print("showInfo:", showInfo)
+                    t_size = (10 * len(showInfo), 22)
+                    c2 = left + t_size[0], top - t_size[1] - 3  # 纵坐标，多减3目的是字上方稍留空
+                    cv2.rectangle(frame, (left, top), c2, (255, 0, 0), -1)  # filled，蓝色填充，BGR
+                    # print("t_size:", t_size, " c1:", c1, " c2:", c2)
+
+                    # Draw a label with a name below the face
+                    # cv2.rectangle(im0, c1, c2, (0, 0, 255), cv2.FILLED)
+                    font = cv2.FONT_HERSHEY_DUPLEX
+
+                    # 将CV2转为PIL，添加中文label后再转回来
+                    pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                    draw = ImageDraw.Draw(pil_img)
+                    font = ImageFont.truetype('simhei.ttf', 20, encoding='utf-8')
+                    draw.text((left, top - 20), showInfo, (255, 255, 255), font=font)
+
+                    frame = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)  # PIL转CV2
+
+                    curr_time = formatTimestamp(time.time(), format="%Y%m%d_%H%M%S", ms=True)
+                    # 保存
+                    savefile = "D:/data/coming/" + curr_time + ".jpg"
+                    cv2.imwrite(savefile, frame)
 
             if height != 480 or width != 640:
                 frame = cv2.resize(frame, (640, 480))    # resize时的顺序为：宽，高
