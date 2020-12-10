@@ -27,7 +27,8 @@ def bindFaceAndPerson(bboxes, personList):
     used_faceList = []    # 已使用过的脸框
     used_personList = []    # 已使用过的人体框
     for face_box in bboxes:
-        if face_box in used_faceList:    # 已经比较过的无须再参与比较
+        face_box_line = "%s_%s_%s_%s" % (str(face_box[0]), str(face_box[1]), str(face_box[2]), str(face_box[3]))
+        if face_box_line in used_faceList:    # 已经比较过的无须再参与比较
             continue
         left, top, right, bottom = face_box
         w = right - left
@@ -37,8 +38,8 @@ def bindFaceAndPerson(bboxes, personList):
 
         for i in range(len(personList)):
             p_class, person_id, person_box, score, track_state = personList[i]    # 类别，id，人物框，得分
-
-            if person_box in used_personList:
+            person_box_line = "%s_%s_%s_%s" % (str(person_box[0]), str(person_box[1]), str(person_box[2]), str(person_box[3]))
+            if person_box_line in used_personList:
                 continue
 
             top, left, bottom, right = person_box
@@ -48,8 +49,8 @@ def bindFaceAndPerson(bboxes, personList):
             if tag is True:
                 askPersonList.append((p_class, person_id, person_box, person_area, face_box, face_area, score, track_state))
 
-                used_faceList.append(face_box)
-                used_personList.append(person_box)
+                used_faceList.append(face_box_line)
+                used_personList.append(person_box_line)
                 break
     return askPersonList
 

@@ -329,7 +329,9 @@ def detect_thread(cfg, frame_buffer, lock):
 
                 if my_coming is True:
                     cv2.imwrite(savefile, result)
-                cv2.imshow("coming", result)
+                if height != 480 or width != 640:
+                    result = cv2.resize(result, (640, 480))  # resize时的顺序为：宽，高
+                cv2.imshow("frame", result)
                 cv2.waitKey(1)
         except Exception as e:
             traceback.print_exc()

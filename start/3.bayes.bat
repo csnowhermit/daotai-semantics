@@ -1,0 +1,1 @@
+cmd /k "cd /d D:\workspace\workspace_python/daotai-semantics/bayes&&activate dlp&&python bayes_test_from_socket.py"

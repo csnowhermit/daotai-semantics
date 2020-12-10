@@ -173,13 +173,13 @@ def detect_thread(cfg, frame_buffer, lock):
                 (person_classes, person_boxs, person_scores), \
                 (other_classes, other_boxs, other_scores) = cleaning_box(bbox_xyxy, cls_conf, cls_ids, class_names)
 
-                # 再做追踪
+                # # 再做追踪
                 deepsort.update(frame, person_classes, person_boxs, person_scores)
-
-                # 这里出现bug：误检，只检出一个人，为什么tracker.tracks中有三个人
-                # 原因：人走了，框还在
-                # 解决办法：更新后的tracker.tracks与person_boxs再做一次iou，对于每个person_boxs，只保留与其最大iou的track
-
+                #
+                # # 这里出现bug：误检，只检出一个人，为什么tracker.tracks中有三个人
+                # # 原因：人走了，框还在
+                # # 解决办法：更新后的tracker.tracks与person_boxs再做一次iou，对于每个person_boxs，只保留与其最大iou的track
+                #
                 trackList = getUsefulTrack(person_boxs, deepsort.tracker.tracks)
 
                 # 再做人脸检测
@@ -187,6 +187,7 @@ def detect_thread(cfg, frame_buffer, lock):
                 face_bboxes, face_landmarks = face_detect.get_square_bboxes(face_bboxes, face_landmarks, fixed="height")  # 以高为基准，获得等宽的矩形
 
                 personList = [[track.classes, track.track_id, track.to_tlbr(), track.score, track.state] for track in trackList]    # 人体列表：左上右下
+
                 # 绑定人脸和人体的关系
                 askPersonList = bindFaceAndPerson(face_bboxes, personList)  # （人体框-上左下右，人体面积，人脸框-左上右下，人脸面积）
 
@@ -384,7 +385,7 @@ if __name__ == '__main__':
     frame_buffer = Stack(30 * 5)
     lock = threading.RLock()
 
-    # rtsp_url = "rtsp://admin:quickhigh123456@192.168.3.155/h264/ch1/sub/av_stream"
+    # rtsp_url = "rtsp://admin:quickhigh123456@192.168.0.203/h264/ch1/sub/av_stream"
     rtsp_url = 0
     t1 = threading.Thread(target=capture_thread, args=(rtsp_url, frame_buffer, lock))
     t1.start()

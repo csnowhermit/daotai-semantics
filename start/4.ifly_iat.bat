@@ -1,0 +1,1 @@
+cmd /k "cd /d D:\workspace\MscDemo_jar&&java -jar MscDemo.jar"

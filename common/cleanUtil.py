@@ -27,7 +27,7 @@ def cleaning_box(bbox_xyxy, cls_conf, cls_ids, class_names):
         if predicted_class == "person":  # 如果是人，只有在有效区域内才算
             person_classes.append(predicted_class)
             left, top, right, bottom = xyxy
-            person_boxs.append([left, top, right - left, bottom - top])  # 左上宽高
+            # person_boxs.append([left, top, right - left, bottom - top])  # 左上宽高
             person_scores.append(score)
         elif predicted_class in personal_luggage_list:  # 其他类别的格式：上左下右
             other_classes.append(predicted_class)
