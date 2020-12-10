@@ -4,6 +4,7 @@ import pymysql
 import datetime
 import traceback
 from utils.dateUtil import formatTimestamp
+from config import daotaiID
 
 # 数据库的配置项
 host='127.0.0.1'
@@ -200,9 +201,12 @@ def savePortrait2DB(portraitDict):
             gender = portrait["gender"]
             age = portrait["age"]
             emotion = portrait["emotion"]
-        sentences = portraitDict["sentences"]
-        if sentences is None or len(sentences.strip("\n")) < 1:
-            return
+        source = ""
+        timestamp = portraitDict["timestamp"]
+        sentences = ""
+        savefile = portraitDict["savefile"]
+        intention = ""
+        intentionLevel = ""
 
         sql = "insert into daotai_portrait"
         sql = sql + '''
@@ -212,9 +216,9 @@ def savePortrait2DB(portraitDict):
                 VALUES ('%s', '%s', '%s', 
                         '%s', '%s', '%s', '%s', 
                         '%s', '%s', '%s', '%s', '0')
-              ''' % (str(portraitDict["source"]), str(portraitDict["timestamp"]), str(portraitDict["daotaiID"]),
+              ''' % (str(source), str(timestamp), str(daotaiID),
                      str(luggage), str(gender), str(age), str(emotion),
-                     str(portraitDict["savefile"]), str(sentences), str(portraitDict["intention"]), str(portraitDict["intentionLevel"]))
+                     str(savefile), str(sentences), str(intention), str(intentionLevel))
 
         # print(sql)
         cursor.execute(sql)
