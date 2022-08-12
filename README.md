@@ -33,3 +33,7 @@ bayes_from_socket.bat：语义端启动脚本；
 my_coming.bat：来人感知模块启动脚本；
 
 portrait.bat：用户画像模块启动脚本；
+
+# 4、语音识别端
+
+语音识别端采用讯飞离线语音：https://github.com/xbder/mscV5PlusDemo
